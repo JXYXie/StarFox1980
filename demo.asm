@@ -154,8 +154,8 @@ pressA:
     lda #$09                ; sounds
     sta VOLUME              ; volume
     
-    lda #$e2                ; sounds
-    sta SOUND2
+    lda #$ca                ; sounds
+    sta SOUND3
     
     lda #$01                ; draw ' ' character
     ldx XOFFSET
@@ -185,8 +185,8 @@ pressD:
     lda #$09
     sta VOLUME
     
-    lda #$e2
-    sta SOUND2
+    lda #$ca
+    sta SOUND3
     
     lda #$01                ; draw ' ' character
     ldx XOFFSET
@@ -209,18 +209,22 @@ pressbar:
     lda #$0f
     sta VOLUME
 
-    lda #$c0
-    sta SOUND1
+    lda #$e2
+    sta SOUND3
     
     
     jmp delay
 
 delay:
-
+    
     lda $00c5               ; get current pressed key
     
     cmp #64
     bne delay               ; will not progress until the key help down is let go, 64 is the default value
+    
+    lda #$00                ; this value stops sounds
+    sta SOUND1              ; 
+    sta SOUND3              ; 
     
     jmp gameloop    
     
