@@ -14,25 +14,33 @@
     
     
 ;----------------------Macros--------------------------
-XOFFSET     equ $1c10
-YOFFSET     equ $1c11
+XOFFSET     equ $fb
+YOFFSET     equ $fc
+
 CHROUT      equ $ffd2
 RESET       equ $fd22
 GETIN       equ $ffe4
+SOUND1      equ $900a
+SOUND2      equ $900b
+SOUND3      equ $900c
+NOISE       equ $900d
+VOLUME      equ $900e
+SCRCOLOR    equ $900f
+TXTCOLOR    equ $0286
 
 ;-------------------End Macros-------------------------
-
-
-
-    jsr $e55f               ; clear the screen
-    
-    lda #$40                ; load new text colour
-    sta $0286               ; change text colour
-    lda #$19                ; load new background colour
-    sta $900f               ; change background and border colours
     
     
 ;-----------------------Main Title Screen---------------------------
+    
+    jsr $e55f               ; clear the screen
+    
+    lda #$40                ; load new text colour
+    sta TXTCOLOR            ; change text colour
+    
+    lda #$19                ; load new background colour
+    sta SCRCOLOR            ; change background and border colours
+    
     ; loop that iterates through title characters
     ldy #00                 ; initialize counter at 0
 titleloop:
@@ -49,7 +57,7 @@ titlewait:
 ;------------------------End Tile Screen-----------------------------
     
     lda #$08                ; load new black background colour
-    sta $900f               ; change background and border colours
+    sta SCRCOLOR            ; change background and border colours
 
     lda #$ff                ; loading the value into $9005 makes the VIC not look into the rom location for characters, instead the vic looks at memory starting at $1c00
     sta $9005               ; the above can be found on pages 85 and 86 of the VIC 20 manual 
@@ -143,11 +151,11 @@ pressA:
     cpx #$8c
     beq delay
     
-    lda #$09                ;sounds
-    sta $900e               ;sounds
+    lda #$09                ; sounds
+    sta VOLUME              ; volume
     
-    lda #$e2                ;sounds
-    sta $900b               ;sounds
+    lda #$e2                ; sounds
+    sta SOUND2
     
     lda #$01                ; draw ' ' character
     ldx XOFFSET
@@ -175,10 +183,10 @@ pressD:
     beq delay
     
     lda #$09
-    sta $900e
+    sta VOLUME
     
     lda #$e2
-    sta $900b
+    sta SOUND2
     
     lda #$01                ; draw ' ' character
     ldx XOFFSET
@@ -199,10 +207,10 @@ pressD:
     
 pressbar:
     lda #$0f
-    sta $900e
+    sta VOLUME
 
     lda #$c0
-    sta $900a
+    sta SOUND1
     
     
     jmp delay
@@ -213,10 +221,6 @@ delay:
     
     cmp #64
     bne delay               ; will not progress until the key help down is let go, 64 is the default value
-
-    lda #$00                ; this value stops sounds
-    sta $900b               ; sound location
-    sta $900a               ; sound location      
     
     jmp gameloop    
     
