@@ -1,7 +1,7 @@
 ;-----------------------------------------
 ; Work in progress demo for Star Fox 1980
 ;-----------------------------------------
-    processor 6502
+    Processor 6502
     org $1001               ; Unexpanded VIC
 
     ; BASIC stub (unexpanded vic)
@@ -79,11 +79,6 @@ titlewait:
     lda #$00
     sta $1c07
     
-    jsr $e55f               ; clear screen
-    
-    ldy #$00                ; draw custom character
-    sty $1e00               ; top left corner with a bit of offset (corner is at 1e16)
-    
 ;-----------------start of second character in memory-----------------
     lda #$00                ; the next 8 load instructs load a byte representing a blank character square
     sta $1c08               ; together the 8 bytes will make a empty char square
@@ -112,7 +107,10 @@ titlewait:
     jsr $e55f               ; clear screen
     
     ldy #$00                ; draw custom character
-    sty $1f96               ; top left corner with a bit of offset (corner is at 1e16)
+    sty $1f96               ; 8086
+    
+    ldy #$06                ; color code
+    sty $9796               ; 38806
     
     lda #$96
     sta XOFFSET             ; we are treating this location as ram, it contains the offset to add to the screen
@@ -134,7 +132,7 @@ gameloop:
     ;beq pressS              ; pressed s
     
     cmp #32
-    beq pressbar            ; pressed spacebar
+    beq pressbar            ; pressed space bar
     
     jmp gameloop
     
@@ -161,9 +159,12 @@ pressA:
     dex                     ; decrement x by 1 to represent location as current location has moved 1
     stx XOFFSET
     
-    lda #$00                ; current '@' character
+    lda #$00                ; current star fighter character
     ldx XOFFSET
     sta $1f00 ,x            ; store it at the current location
+    
+    lda #$06
+    sta $9700 ,x
     
     jmp delay
     
@@ -187,9 +188,12 @@ pressD:
     inx                     ; increment x by 1 to represent location as current location has moved 1
     stx XOFFSET    
 
-    lda #$00                ; current '@' character
+    lda #$00                ; current starfighter character
     ldx XOFFSET
     sta $1f00 ,x            ; store it at the current location
+    
+    lda #$06                ; color code
+    sta $9700 ,x
     
     jmp delay
     
@@ -199,6 +203,7 @@ pressbar:
 
     lda #$c0
     sta $900a
+    
     
     jmp delay
 
@@ -222,7 +227,11 @@ spinloop:
     nop
     dex
     bne spinloop
-
+    
+playsound:
+    
+    
+    
 splashscreen:  
     dc.b    $0d
     dc.b    "S T A R F O X  1 9 8 0", $0d, $0d, $0d
