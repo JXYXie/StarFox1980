@@ -16,6 +16,9 @@
 ;-----------------------------Macros-------------------------------
 XOFFSET     equ $fb
 YOFFSET     equ $fc
+HEALTH      equ $fd
+HEARTCNT   equ $fe
+
 
 CHROUT      equ $ffd2
 RESET       equ $fd22
@@ -29,7 +32,6 @@ SCRCOLOR    equ $900f
 TXTCOLOR    equ $0286
 
 ;----------------------------End Macros----------------------------
-    
     
 ;---------------------------Main Title Screen------------------------------
     
@@ -62,102 +64,45 @@ titlewait:
     lda #$ff                ; loading the value into $9005 makes the VIC not look into the rom location for characters, instead the vic looks at memory starting at $1c00
     sta $9005               ; the above can be found on pages 85 and 86 of the VIC 20 manual 
     
-    
-;--------------------start of first character in memory--------------------
-    lda #$08                ; the next 8 load instructs load a byte representing 1 line of the starfighter 
-    sta $1c00               ; together the 8 bytes will make a star fighter sprite character
 
-    lda #$08
-    sta $1c01
-
-    lda #$08
-    sta $1c02
-    
-    lda #$1c
-    sta $1c03
-    
-    lda #$3e
-    sta $1c04
-    
-    lda #$3e
-    sta $1c05
-    
-    lda #$49
-    sta $1c06
-    
-    lda #$08
-    sta $1c07
-    
-;--------------------start of second character in memory--------------------
-    lda #$00                ; the next 8 load instructs load a byte representing a blank character square
-    sta $1c08               ; together the 8 bytes will make a empty char square
-
-    lda #$00
-    sta $1c09
-
-    lda #$00
-    sta $1c0a
-    
-    lda #$00
-    sta $1c0b
-    
-    lda #$00
-    sta $1c0c
-    
-    lda #$00
-    sta $1c0d
-    
-    lda #$00
-    sta $1c0e
-    
-    lda #$00
-    sta $1c0f
-    
-;--------------------start of third character in memory---------------------
-    lda #$00                ; the next 8 load instructs load a byte representing a blank character square
-    sta $1c10               ; together the 8 bytes will make a empty char square
-
-    lda #$18
-    sta $1c11
-
-    lda #$3c
-    sta $1c12
-    
-    lda #$ff
-    sta $1c13
-    
-    lda #$ff
-    sta $1c14
-    
-    lda #$3c
-    sta $1c15
-    
-    lda #$18
-    sta $1c16
-    
-    lda #$00
-    sta $1c17
-    
 ;---------------------------------------------------------------------------
     
     jsr $e55f               ; clear screen
     
-    ldy #$00                ; draw custom character
+    lda #$02                ; draw heart
+    sta $1fe4
+    sta $97e4
+    sta $1fe5
+    sta $97e5
+    sta $1fe6
+    sta $97e6
+    
+    ldy #$03                ; draw starfighter character
     sty $1f96               ; 8086
     
     ldy #$06                ; color code
     sty $9796               ; 38806
     
-    
-    ldy #$02                ; draw custom character
+    ldy #$04                ; draw enemy character
     sty $1e0a               ; 8086
     
     ldy #$02                ; color code
     sty $960a               ; 38806
     
+    ldy #$05                ; draw laser
+    sty $1e36               ; 8086
+    
+    ldy #$02                ; color code
+    sty $9636               ; 38806
     
     lda #$96
     sta XOFFSET             ; we are treating this location as ram, it contains the offset to add to the screen
+    
+    
+;----------------------------Variable initialization---------------------------
+    ldy #$03
+    sty HEALTH
+    sty HEARTCNT
     
 ;-------------------------------Main game loop-------------------------------
 gameloop:
@@ -178,14 +123,23 @@ gameloop:
     cmp #32
     beq pressbar            ; pressed space bar
     
+    
     jmp gameloop
     
+    
+decrementHealth:
+    
+    jsr updateHealth
+    ldy HEALTH
+    cpy #$00
+    bne delay
+    beq gameover
     
 pressA:
     
     ldx XOFFSET
     cpx #$8c
-    beq delay
+    beq decrementHealth
     
     lda #$09                ; sounds
     sta VOLUME              ; volume
@@ -193,7 +147,7 @@ pressA:
     lda #$ca                ; sounds
     sta SOUND3
     
-    lda #$01                ; draw ' ' character
+    lda #$00                ; draw ' ' character
     ldx XOFFSET
     
     cpx #$00
@@ -203,7 +157,7 @@ pressA:
     dex                     ; decrement x by 1 to represent location as current location has moved 1
     stx XOFFSET
     
-    lda #$00                ; current star fighter character
+    lda #$03                ; current star fighter character
     ldx XOFFSET
     sta $1f00 ,x            ; store it at the current location
     
@@ -216,7 +170,8 @@ pressD:
     
     ldx XOFFSET
     cpx #$a1
-    beq delay
+    beq decrementHealth
+    
     
     lda #$09
     sta VOLUME
@@ -224,7 +179,7 @@ pressD:
     lda #$ca
     sta SOUND3
     
-    lda #$01                ; draw ' ' character
+    lda #$00                ; draw ' ' character
     ldx XOFFSET
     sta $1f00 ,x            ; store it on screen where ship used to be 
     
@@ -232,7 +187,7 @@ pressD:
     inx                     ; increment x by 1 to represent location as current location has moved 1
     stx XOFFSET    
 
-    lda #$00                ; current starfighter character
+    lda #$03                ; current starfighter character
     ldx XOFFSET
     sta $1f00 ,x            ; store it at the current location
     
@@ -242,6 +197,7 @@ pressD:
     jmp delay
     
 pressbar:
+    
     lda #$0f
     sta VOLUME
 
@@ -272,9 +228,34 @@ spinloop:
     dex
     bne spinloop
     
-playsound:
     
+gameover:
+    jsr $e55f               ; clear screen
+    lda #$14                ; load new background colour
+    sta SCRCOLOR            ; change background and border colours
     
+    lda #$cc                ; load new background colour
+    sta SCRCOLOR            ; change background and border colours
+    
+    lda #$0a                ; load new background colour
+    sta SCRCOLOR            ; change background and border colours
+    
+    jmp gameover    
+    
+;updateHealthInit:
+    ;ldx HEALTH
+    ;tya                     
+    ;tax                     
+    
+updateHealth:
+    ldx HEALTH
+    dex
+    lda #$00                ; blank
+    sta $1fe4 ,x
+    stx HEALTH
+    rts
+    
+    include     "charset.asm"
     
 splashscreen:  
     dc.b    $0d
