@@ -13,7 +13,7 @@
     dc.w 0                  ; End of BASIC program
     
     
-;----------------------Macros--------------------------
+;-----------------------------Macros-------------------------------
 XOFFSET     equ $fb
 YOFFSET     equ $fc
 
@@ -28,10 +28,10 @@ VOLUME      equ $900e
 SCRCOLOR    equ $900f
 TXTCOLOR    equ $0286
 
-;-------------------End Macros-------------------------
+;----------------------------End Macros----------------------------
     
     
-;-----------------------Main Title Screen---------------------------
+;---------------------------Main Title Screen------------------------------
     
     jsr $e55f               ; clear the screen
     
@@ -54,7 +54,7 @@ titlewait:
     jsr GETIN            ; pressing any input ends title screen
     beq titlewait
 
-;------------------------End Tile Screen-----------------------------
+;----------------------------End Tile Screen-------------------------------
     
     lda #$08                ; load new black background colour
     sta SCRCOLOR            ; change background and border colours
@@ -62,32 +62,33 @@ titlewait:
     lda #$ff                ; loading the value into $9005 makes the VIC not look into the rom location for characters, instead the vic looks at memory starting at $1c00
     sta $9005               ; the above can be found on pages 85 and 86 of the VIC 20 manual 
     
-;-----------------start of first character in memory-----------------
-    lda #$00                ; the next 8 load instructs load a byte representing 1 line of the starfighter 
+    
+;--------------------start of first character in memory--------------------
+    lda #$08                ; the next 8 load instructs load a byte representing 1 line of the starfighter 
     sta $1c00               ; together the 8 bytes will make a star fighter sprite character
 
     lda #$08
     sta $1c01
 
-    lda #$1c
+    lda #$08
     sta $1c02
     
-    lda #$7f
+    lda #$1c
     sta $1c03
     
-    lda #$7f
+    lda #$3e
     sta $1c04
     
-    lda #$5d
+    lda #$3e
     sta $1c05
     
-    lda #$08
+    lda #$49
     sta $1c06
     
-    lda #$00
+    lda #$08
     sta $1c07
     
-;-----------------start of second character in memory-----------------
+;--------------------start of second character in memory--------------------
     lda #$00                ; the next 8 load instructs load a byte representing a blank character square
     sta $1c08               ; together the 8 bytes will make a empty char square
 
@@ -112,6 +113,33 @@ titlewait:
     lda #$00
     sta $1c0f
     
+;--------------------start of third character in memory---------------------
+    lda #$00                ; the next 8 load instructs load a byte representing a blank character square
+    sta $1c10               ; together the 8 bytes will make a empty char square
+
+    lda #$18
+    sta $1c11
+
+    lda #$3c
+    sta $1c12
+    
+    lda #$ff
+    sta $1c13
+    
+    lda #$ff
+    sta $1c14
+    
+    lda #$3c
+    sta $1c15
+    
+    lda #$18
+    sta $1c16
+    
+    lda #$00
+    sta $1c17
+    
+;---------------------------------------------------------------------------
+    
     jsr $e55f               ; clear screen
     
     ldy #$00                ; draw custom character
@@ -119,6 +147,14 @@ titlewait:
     
     ldy #$06                ; color code
     sty $9796               ; 38806
+    
+    
+    ldy #$02                ; draw custom character
+    sty $1e0a               ; 8086
+    
+    ldy #$02                ; color code
+    sty $960a               ; 38806
+    
     
     lda #$96
     sta XOFFSET             ; we are treating this location as ram, it contains the offset to add to the screen
