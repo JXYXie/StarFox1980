@@ -7,7 +7,6 @@ SCORE       equ $fc
 PLAYERPOS   equ $fd
 BOSSPOS     equ $fe
 
-
 CHROUT      equ $ffd2
 RESET       equ $fd22
 GETIN       equ $ffe4
@@ -19,7 +18,10 @@ VOLUME      equ $900e
 SCRCOLOR    equ $900f
 TXTCOLOR    equ $0286
 
+SETTIM      equ $f767
 ;----------------------------End Macros----------------------------
+
+
 ;----------------------------Basic Stub----------------------------
     Processor 6502
     org $1001               ; Unexpanded VIC
@@ -78,50 +80,7 @@ init:
     ldy #$04                ; color code
     sty $96a4               ; 38806
     
-    ldy #$05                ; draw laser
-    sty $1eba               ; 8086
-    ldy #$04                ; color code
-    sty $96ba               ; 38806
-    
-    ldy #$05                ; draw laser
-    sty $1ed0               ; 8086
-    ldy #$04                ; color code
-    sty $96d0               ; 38806
-    
-    ldy #$05                ; draw laser
-    sty $1ee6               ; 8086
-    ldy #$04                ; color code
-    sty $96e6               ; 38806
-    
-    ldy #$05                ; draw laser
-    sty $1efc               ; 8086
-    ldy #$04                ; color code
-    sty $96fc               ; 38806
-    
-    ldy #$05                ; draw laser
-    sty $1f12               ; 8086
-    ldy #$04                ; color code
-    sty $9712               ; 38806
-    
-    ldy #$05                ; draw laser
-    sty $1f28               ; 8086
-    ldy #$04                ; color code
-    sty $9728               ; 38806
-    
-    ldy #$05                ; draw laser
-    sty $1f3e               ; 8086
-    ldy #$04                ; color code
-    sty $973e               ; 38806
-    
-    ldy #$05                ; draw laser
-    sty $1f54               ; 8086
-    ldy #$04                ; color code
-    sty $9754               ; 38806
-    
-    ldy #$05                ; draw laser
-    sty $1f6a               ; 8086
-    ldy #$04                ; color code
-    sty $976a               ; 38806
+
     
     ldy #$05                ; draw laser
     sty $1f80               ; 8086
@@ -190,143 +149,93 @@ init:
     
     lda #$96
     sta PLAYERPOS           ; we are treating this location as ram, it contains the offset to add to the screen
-    
+
+
+
 ;----------------------------Variable initialization---------------------------
     ldy #$03
     sty HEALTH
-    
+
+
+
+
 ;-------------------------------Main game loop-------------------------------
+
+
 gameloop:
+
     lda $00c5               ; get current pressed key
-    
-    cmp #17
-    beq pressA              ; pressed a
-    
-    cmp #18
-    beq pressD              ; pressed d
-    
-    ;cmp #9
-    ;beq pressW              ; pressed w
-    
-    ;cmp #41
-    ;beq pressS              ; pressed s
-    
-    cmp #32
-    beq pressbar            ; pressed space bar
-    
-    
+    sta key_pressed
+
+    jsr moveplayer
+
+    jsr delay
+
+    jsr collisioncheck
+
+    lda #64         ;reset the key pressed
+    sta key_pressed
+
     jmp gameloop
-    
-    
-drawBoss:
-    
-    
-drawLoop:
-    
-    
+
+
+delay:          ;(p 171 a0-a02 jiffy clock) p204 - 205 settim
+    LDA #$f9    ; 4F1A01, the max value the clock can be at, goes back to 0 after 
+    LDX #$19
+    LDY #$4f
+    JSR $f767
+dosum:
+   LDA $A0
+   BNE dosum
+
+   rts
+
+
+collisioncheck:
+
+    ldx PLAYERPOS
+    cpx #$8c
+    beq predecHealth
+
+    ldx PLAYERPOS
+    cpx #$a1
+    beq predecHealth2
+
+    jmp next3
+
+
+predecHealth:
+    lda #18         ;reset the key pressed
+    jmp next2
+
+predecHealth2:
+    lda #17         ;reset the key pressed
+next2:
+    sta key_pressed
+    jsr moveplayer
+
+
 decrementHealth:
-    
+ 
     jsr updateHealth
     ldy HEALTH
     cpy #$00
-    bne delay
-    beq gameover
-    
-pressA:
-    
-    ldx PLAYERPOS
-    cpx #$8c
-    beq decrementHealth
-    
-    lda #$09                ; sounds
-    sta VOLUME              ; volume
-    
-    lda #$ca                ; sounds
-    sta SOUND3
-    
-    lda #$00                ; draw ' ' character
-    ldx PLAYERPOS
-    
-    cpx #$00
-    sta $1f00 ,x            ; store it on screen where ship used to be 
-    
-    ldx PLAYERPOS
-    dex                     ; decrement x by 1 to represent location as current location has moved 1
-    stx PLAYERPOS
-    
-    lda #$03                ; current star fighter character
-    ldx PLAYERPOS
-    sta $1f00 ,x            ; store it at the current location
-    
-    lda #$06
-    sta $9700 ,x
-    
-    jmp delay
-    
-pressD:
-    
-    ldx PLAYERPOS
-    cpx #$a1
-    beq decrementHealth
-    
-    
-    lda #$09
-    sta VOLUME
-    
-    lda #$ca
-    sta SOUND3
-    
-    lda #$00                ; draw ' ' character
-    ldx PLAYERPOS
-    sta $1f00 ,x            ; store it on screen where ship used to be 
-    
-    ldx PLAYERPOS
-    inx                     ; increment x by 1 to represent location as current location has moved 1
-    stx PLAYERPOS    
+    bne next3
+    jsr gameover
 
-    lda #$03                ; current starfighter character
-    ldx PLAYERPOS
-    sta $1f00 ,x            ; store it at the current location
-    
-    lda #$06                ; color code
-    sta $9700 ,x
-    
-    jmp delay
-    
-pressbar:
-    
-    lda #$0f
-    sta VOLUME
+next3:
+    RTS
 
-    lda #$e2
-    sta SOUND3
-    
-    
-    jmp delay
 
-    
-delay:
-    
-    lda $00c5               ; get current pressed key
-    
-    cmp #64
-    bne delay               ; will not progress until the key help down is let go, 64 is the default value
-    
-    lda #$00                ; this value stops sounds
-    sta SOUND1              ; 
-    sta SOUND3              ; 
-    
-    jmp gameloop    
-    
-spinloop:
-
-    ldx #0
-    nop                     ; nops used as busy work
-    nop
+updateHealth:
+    ldx HEALTH
     dex
-    bne spinloop
-    
-    
+    lda #$00                ; blank
+    sta $1fe4 ,x
+    stx HEALTH
+    rts
+
+
 gameover:
     jsr $e55f               ; clear screen
     lda #$19                ; load new background colour
@@ -336,22 +245,47 @@ gameover:
     sta SCRCOLOR            ; change background and border colours
     
     jmp gameover    
-    
-;updateHealthInit:
-    ;ldx HEALTH
-    ;tya                     
-    ;tax                     
-    
-updateHealth:
-    ldx HEALTH
-    dex
-    lda #$00                ; blank
-    sta $1fe4 ,x
-    stx HEALTH
+
     rts
+
+
+moveplayer:
+
+    ldx PLAYERPOS
     
+    lda #$00                ; draw ' ' character
+    ldx PLAYERPOS
+    sta $1f00 ,x            ; store it on screen where ship used to be 
+
+    lda key_pressed
+
+    cmp #64
+    beq next   
+    
+    cmp #17
+    beq skip 
+
+    inx                     ; increment x by 1 to represent location as current location has moved 1
+    jmp next
+skip:
+    dex 
+next:
+
+    stx PLAYERPOS    
+
+    lda #$03                ; current starfighter character
+    ldx PLAYERPOS
+    sta $1f00 ,x            ; store it at the current location
+    
+    lda #$06                ; color code
+    sta $9700 ,x
+
+    rts
+
     include     "charset.asm"
-    
+ 
+key_pressed: dc.b #64  ; set to default 64 for no key pressed
+
 titlescreen:  
     dc.b    $0d
     dc.b    "S T A R F O X  1 9 8 0", $0d, $0d, $0d
@@ -360,3 +294,30 @@ titlescreen:
     dc.b    "      ALAN FUNG", $0d, $0d, $0d
     dc.b    $0d, $0d, $0d, $0d, $0d, $0d
     dc.b    "   PRESS F1 TO START", $0d
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
