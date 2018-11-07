@@ -259,15 +259,18 @@ moveplayer:
 
     lda key_pressed
 
-    cmp #64
-    beq next   
+    cmp #18
+    beq increment   
     
     cmp #17
-    beq skip 
+    beq decrement 
 
+    jmp next
+
+increment:
     inx                     ; increment x by 1 to represent location as current location has moved 1
     jmp next
-skip:
+decrement:
     dex 
 next:
 
@@ -280,6 +283,7 @@ next:
     lda #$06                ; color code
     sta $9700 ,x
 
+end:
     rts
 
     include     "charset.asm"
