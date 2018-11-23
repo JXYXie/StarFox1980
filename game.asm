@@ -41,6 +41,9 @@ SETTIM      equ $f767
     
 ;---------------------------Initialization-----------------------------------
 init:
+
+    
+
     lda #$08                ; load new black background colour
     sta SCRCOLOR            ; change background and border colours
 
@@ -48,6 +51,8 @@ init:
     sta $9005               ; the above can be found on pages 85 and 86 of the VIC 20 manual 
     
     jsr $e55f               ; clear screen
+
+    jsr refresh
     
     ; Draw hearts
     lda #$02                ; Heart character
@@ -70,82 +75,9 @@ init:
     ;ldy #$02                ; color code
     ;sty $960a               ;
     
-    ldy #$05                ; draw laser
-    sty $1e8e               ;
-    ldy #$04                ; color code
-    sty $968e               ;
-    
-    ldy #$05                ; draw laser
-    sty $1ea4               ; 8086
-    ldy #$04                ; color code
-    sty $96a4               ; 38806
     
 
-    
-    ldy #$05                ; draw laser
-    sty $1f80               ; 8086
-    ldy #$04                ; color code
-    sty $9780               ; 38806
-    
-    ldy #$07                ; draw boss
-    sty $1e60               ;
-    ldy #$02
-    sty $9660
-    
-    ldy #$08                ; draw boss
-    sty $1e61               ;
-    ldy #$02
-    sty $9661
-    
-    ldy #$09                ; draw boss
-    sty $1e62               ;
-    ldy #$02
-    sty $9662
-    
-    ldy #$0a                ; draw boss
-    sty $1e63               ;
-    ldy #$02
-    sty $9663
-    
-    ldy #$0b                ; draw boss
-    sty $1e64               ;
-    ldy #$02
-    sty $9664
-    
-    ldy #$0c                ; draw boss
-    sty $1e65               ;
-    ldy #$02
-    sty $9665
-    
-    ldy #$0d                ; draw boss
-    sty $1e76               ;
-    ldy #$02
-    sty $9676
-    
-    ldy #$0e                ; draw boss
-    sty $1e77               ;
-    ldy #$02
-    sty $9677
-    
-    ldy #$0f                ; draw boss
-    sty $1e78               ;
-    ldy #$02
-    sty $9678
-    
-    ldy #$10                ; draw boss
-    sty $1e79               ;
-    ldy #$02
-    sty $9679
-    
-    ldy #$11                ; draw boss
-    sty $1e7a               ;
-    ldy #$02
-    sty $967a
-    
-    ldy #$12                ; draw boss
-    sty $1e7b               ;
-    ldy #$02
-    sty $967b
+
     
     lda #$96
     sta PLAYERPOS           ; we are treating this location as ram, it contains the offset to add to the screen
@@ -156,21 +88,19 @@ init:
     ldy #$03
     sty HEALTH
 
-
-
-
 ;-------------------------------Main game loop-------------------------------
 
 
 gameloop:
 
+    jsr refresh
+
     lda $00c5               ; get current pressed key
     sta key_pressed
 
+    jsr drawboss
     jsr moveplayer
-
     jsr delay
-
     jsr collisioncheck
 
     lda #64         ;reset the key pressed
@@ -249,13 +179,106 @@ gameover:
     rts
 
 
+;----------------------------jraphics---------------------------
+
+
+refresh:
+
+
+    lda #$00               
+    ldx #$ff
+
+refreshloop1:
+
+    sta $1e00 ,x                
+    dex 
+    bne refreshloop1
+    sta $1e00 ,x 
+
+    ldx #$f9
+
+refreshloop2:
+    sta $1f00 ,x                
+    dex 
+    bne refreshloop2
+    sta $1f00 ,x 
+
+
+    rts
+
+
+drawboss:
+
+    ldy #$07                ; draw boss
+    sty $1e60               ;
+    ldy #$02
+    sty $9660
+    
+    ldy #$08                ; draw boss
+    sty $1e61               ;
+    ldy #$02
+    sty $9661
+    
+    ldy #$09                ; draw boss
+    sty $1e62               ;
+    ldy #$02
+    sty $9662
+    
+    ldy #$0a                ; draw boss
+    sty $1e63               ;
+    ldy #$02
+    sty $9663
+    
+    ldy #$0b                ; draw boss
+    sty $1e64               ;
+    ldy #$02
+    sty $9664
+    
+    ldy #$0c                ; draw boss
+    sty $1e65               ;
+    ldy #$02
+    sty $9665
+    
+    ldy #$0d                ; draw boss
+    sty $1e76               ;
+    ldy #$02
+    sty $9676
+    
+    ldy #$0e                ; draw boss
+    sty $1e77               ;
+    ldy #$02
+    sty $9677
+    
+    ldy #$0f                ; draw boss
+    sty $1e78               ;
+    ldy #$02
+    sty $9678
+    
+    ldy #$10                ; draw boss
+    sty $1e79               ;
+    ldy #$02
+    sty $9679
+    
+    ldy #$11                ; draw boss
+    sty $1e7a               ;
+    ldy #$02
+    sty $967a
+    
+    ldy #$12                ; draw boss
+    sty $1e7b               ;
+    ldy #$02
+    sty $967b
+
+    rts    
+
+
 moveplayer:
 
     ldx PLAYERPOS
     
-    lda #$00                ; draw ' ' character
-    ldx PLAYERPOS
-    sta $1f00 ,x            ; store it on screen where ship used to be 
+    ;lda #$00                ; draw ' ' character
+    ;ldx PLAYERPOS
+    ;sta $1f00 ,x            ; store it on screen where ship used to be 
 
     lda key_pressed
 
@@ -286,6 +309,7 @@ next:
 end:
     rts
 
+
     include     "charset.asm"
  
 key_pressed: dc.b #64  ; set to default 64 for no key pressed
@@ -298,30 +322,4 @@ titlescreen:
     dc.b    "      ALAN FUNG", $0d, $0d, $0d
     dc.b    $0d, $0d, $0d, $0d, $0d, $0d
     dc.b    "   PRESS F1 TO START", $0d
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
