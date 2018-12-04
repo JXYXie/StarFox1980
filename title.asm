@@ -15,7 +15,7 @@ titleloop:
     lda titlescreen,y
     jsr CHROUT
     iny
-    cpy #104                ; 104 characters in the title screen
+    cpy #101                ; 101 characters in the title screen
     bne titleloop
     
 titlewait:
