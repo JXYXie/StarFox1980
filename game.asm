@@ -88,6 +88,68 @@ init:
     ldy #$03
     sty HEALTH
 
+
+
+;-------------------------------music loop loop-------------------------------
+
+    lda #$0f		; 15 is the max volume the speakers can be set at. The 1-15 values can be found at p(95,96) of the vic 20 manual
+    sta $900e		; 900e controls volume, is where the volume values are written to. this address can be found at p(95,96) of the vic 20 manual
+    
+
+    ;lda #$87	 ; C  (135) low C this value can be found at p(95,96) of the vic 20 manual
+    ;sta $900b		 ; store sound
+
+playMusic:
+
+    ldy #$03 ;start of loop counter, music has 3 notes in it
+
+
+  
+loopMusic:
+
+    LDA musicDuration,y
+
+    TYA ; transferring y to a in prep to preserve it
+    PHA
+    PHA  ; the first thing in the stack is the duration of the music 
+    ;TAX               ;X holds amount of time loop must run to make 1 second, assuming 3 jiffies as the loop delay, the A register is now free to hold stuff 
+    
+    
+anotherLoop:
+    LDA musicNote,y
+    PHA  ;2 the music note to play
+    LDA musicRegister,y ; the register in now in A
+    TAX ; the music register is now in x
+    pla ;2 the music note to play is now in a
+    sta $9000,x ; the music note that needs to be played is now active in the indicated register 
+delan:
+    jsr gameloop
+    jsr delay 
+    pla ; pull the loop count to make a second from the stack
+    TAX ; loop count now in x
+    bne endd
+    DEX ; x is decremented down
+    TXA ; transfer x to a in preparation to do a push to preserve the decrement value in the stack
+    pha ; push the decrement value into the stack
+    jmp delan
+
+endd:
+    pla
+    tay ; y now contains the index counter thing again
+    
+    lda #$00
+    sta SOUND1
+    sta SOUND2
+    sta SOUND3
+    dey
+    cpy #$01
+    beq endd2
+
+    jmp loopMusic
+
+endd2:
+    jmp playMusic
+
 ;-------------------------------Main game loop-------------------------------
 
 
@@ -106,7 +168,12 @@ gameloop:
     lda #64         ;reset the key pressed
     sta key_pressed
 
-    jmp gameloop
+    ;jmp gameloop
+
+    rts
+
+
+
 
 
 delay:          ;(p 171 a0-a02 jiffy clock) p204 - 205 settim
@@ -322,4 +389,22 @@ titlescreen:
     dc.b    "      ALAN FUNG", $0d, $0d, $0d
     dc.b    $0d, $0d, $0d, $0d, $0d, $0d
     dc.b    "   PRESS F1 TO START", $0d
+
+
+musicDuration:  
+    dc.b    #$00, #$14, #$28, #$50
+
+musicNote:  ;Plays A,B,C
+    dc.b    #$00, #$b7, #$87, #$C3  ;bf replaced with 87
+
+musicRegister:    ; this must correspond with the notes. for example if there are 20 notes then there are 20 values in this thing 
+    dc.b    #$00, #$0a, #$0b, #$0c
+
+
+
+
+
+
+
+
 
