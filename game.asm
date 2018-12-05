@@ -2,10 +2,12 @@
 ; Work in progress demo for Star Fox 1980
 ;-----------------------------------------
 ;-----------------------------Macros-------------------------------
-PLAYER_HEALTH	equ $fb
-PLAYER_POS		equ $fc
-BOSS_POS		equ $fd
-BOSS_HEALTH		equ $fe
+PLAYER_HEALTH	equ $57
+PLAYER_POS		equ $58
+BOSS_POS		equ $59
+BOSS_HEALTH		equ $5a
+SCORE			equ $5b
+HISCORE			equ $5c
 ENEMIES			equ #6
 ENEMY_TYPE		equ $033c
 ENEMY_POS		equ $033c + (ENEMIES + 1)
@@ -39,7 +41,9 @@ SETTIM			equ $f767
 ;-----------------------------End Stub----------------------------
 	
 	include "title.asm"
-	
+	include "boss.asm"
+	include "utilities.asm"
+
 	jmp title
 	
 ;---------------------------Initialization-----------------------------------
@@ -70,15 +74,10 @@ init:
 	ldy #$06					; color code
 	sty $9796					; 38806
 	
-	;ldy #$04				 	; draw enemy character
-	;sty $1e0a				 	;
-	
-	;ldy #$02				 	; color code
-	;sty $960a				 	;
+	jsr spawn_boss
 	
 	lda #$96
 	sta PLAYER_POS				; we are treating this location as ram, it contains the offset to add to the screen
-
 
 
 ;----------------------------Variable initialization---------------------------
@@ -97,28 +96,28 @@ playMusic:
   
 loopMusic:
 
-	LDA #$01
-	TYA							; transferring y to a in prep to preserve it
-	PHA
-	PHA							; the first thing in the stack is the duration of the music 
+	lda #$01
+	tya							; transferring y to a in prep to preserve it
+	pha
+	pha							; the first thing in the stack is the duration of the music 
 	;TAX						;X holds amount of time loop must run to make 1 second, assuming 3 jiffies as the loop delay, the A register is now free to hold stuff 
 	
 	
 anotherLoop:
-	LDA main_notes,y
-	PHA							; the music note to play
-	LDA main_music_registers,y 	; the register in now in A
-	TAX 						; the music register is now in x
+	lda main_notes,y
+	pha							; the music note to play
+	lda main_music_registers,y 	; the register in now in A
+	tax 						; the music register is now in x
 	pla 						; the music note to play is now in a
 	sta $9000,x 				; the music note that needs to be played is now active in the indicated register 
 delan:
 	jsr gameloop
 	jsr delay 
 	pla 						; pull the loop count to make a second from the stack
-	TAX 						; loop count now in x
+	tax 						; loop count now in x
 	bne endd
-	DEX 						; x is decremented down
-	TXA 						; transfer x to a in preparation to do a push to preserve the decrement value in the stack
+	dex 						; x is decremented down
+	txa 						; transfer x to a in preparation to do a push to preserve the decrement value in the stack
 	pha 						; push the decrement value into the stack
 	jmp delan
 
@@ -148,8 +147,9 @@ gameloop:
 	lda $00c5					; get current pressed key
 	sta key_pressed
 
-	jsr drawboss
+	jsr draw_boss
 	jsr moveplayer
+	jsr boss_ai
 	jsr delay
 	jsr collisioncheck
 
@@ -251,52 +251,6 @@ refreshloop2:
 
 	rts
 
-
-drawboss:
-
-	ldy #$07					; draw boss
-	sty $1e61					;
-	ldy #$02
-	sty $9661
-	
-	ldy #$08					; draw boss
-	sty $1e62					;
-	ldy #$02
-	sty $9662
-	
-	ldy #$09					; draw boss
-	sty $1e63					;
-	ldy #$02
-	sty $9663
-	
-	ldy #$0a					; draw boss
-	sty $1e64					;
-	ldy #$02
-	sty $9664
-	
-	ldy #$0b					; draw boss
-	sty $1e77					;
-	ldy #$02
-	sty $9677
-	
-	ldy #$0c					; draw boss
-	sty $1e78					;
-	ldy #$02
-	sty $9678
-	
-	ldy #$0d					; draw boss
-	sty $1e79					;
-	ldy #$02
-	sty $9679
-	
-	ldy #$0e					; draw boss
-	sty $1e7a					;
-	ldy #$02
-	sty $967a
-
-	rts	   
-
-
 moveplayer:
 
 	ldx PLAYER_POS
@@ -361,4 +315,7 @@ tune_registers:
 
 laser_sound:
 	dc.b	#$00, #$109, #$109, #$121
+
+rand_num:
+	dc.b	0
 

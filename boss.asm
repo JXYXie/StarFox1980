@@ -1,53 +1,91 @@
 ;-----------------------------------------
 ; Handles boss spawning and movement
 ;-----------------------------------------
-;-----------------------------Macros-------------------------------
 
 spawn_boss:
-
+	ldx #$05					; Initialize boss health
+	stx BOSS_HEALTH
+	ldx #$1f					; Boss position
+	stx BOSS_POS				;
+	rts
 
 draw_boss:
 
-	ldy #$07					; draw boss
-	sty $1e61					;
-	ldy #$02
-	sty $9661
+	ldx BOSS_POS
+	lda #$07					; Boss top left character
+	sta $1e00 ,x				; Store it at the right locatin
+	lda #$02					; Colour
+	sta $9600 ,x
 	
-	ldy #$08					; draw boss
-	sty $1e62					;
-	ldy #$02
-	sty $9662
+	inx
+	lda #$08					; Boss top mid-left character
+	sta $1e00 ,x				; Store it at the right locatin
+	lda #$02					; Colour
+	sta $9600 ,x
 	
-	ldy #$09					; draw boss
-	sty $1e63					;
-	ldy #$02
-	sty $9663
+	inx
+	lda #$09					; Boss top mid-right character
+	sta $1e00 ,x				; Store it at the right locatin
+	lda #$02					; Colour
+	sta $9600 ,x
 	
-	ldy #$0a					; draw boss
-	sty $1e64					;
-	ldy #$02
-	sty $9664
+	inx
+	lda #$0a					; Boss top right character
+	sta $1e00 ,x				; Store it at the right locatin
+	lda #$02					; Colour
+	sta $9600 ,x
 	
-	ldy #$0b					; draw boss
-	sty $1e77					;
-	ldy #$02
-	sty $9677
+	lda BOSS_POS				; Get boss position
+	clc
+	adc #$16					; Get the bottom row
+	tax							; Transfer it to x register
+	lda #$0b					; Boss bottom left character
+	sta $1e00 ,x				; Store it at the right locatin
+	lda #$02					; Colour
+	sta $9600 ,x
 	
-	ldy #$0c					; draw boss
-	sty $1e78					;
-	ldy #$02
-	sty $9678
+	inx
+	lda #$0c					; Boss bottom mid-left character
+	sta $1e00 ,x				; Store it at the right locatin
+	lda #$02					; Colour
+	sta $9600 ,x
 	
-	ldy #$0d					; draw boss
-	sty $1e79					;
-	ldy #$02
-	sty $9679
+	inx
+	lda #$0d					; Boss bottom mid-right character
+	sta $1e00 ,x				; Store it at the right locatin
+	lda #$02					; Colour
+	sta $9600 ,x
 	
-	ldy #$0e					; draw boss
-	sty $1e7a					;
-	ldy #$02
-	sty $967a
+	inx
+	lda #$0e					; Boss bottom right character
+	sta $1e00 ,x				; Store it at the right locatin
+	lda #$02					; Colour
+	sta $9600 ,x
 
-	rts	   
+	rts
+
+boss_move_left:
+	ldx BOSS_POS				; Get current boss location
+	cpx #$16					; is it touching the left boundary
+	beq boss_move_right			; if so move right instead
+	dex							; if not move left
+	stx BOSS_POS				; and update new location
+	rts
+
+boss_move_right:
+	ldx BOSS_POS				; Get current boss location
+	cpx #$28					; is it touching right boundary
+	beq boss_move_left			; if so move left instead
+	inx							; if not move right
+	stx BOSS_POS				; and update new location
+	rts
+
+boss_ai:
+	jsr randgen					; Generate random number
+	lsr rand_num				; Shift bit 0
+	bcc boss_move_left			; If even so move left
+	bcs boss_move_right			; Move right
+	
+	rts
 
 
