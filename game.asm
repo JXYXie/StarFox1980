@@ -2,23 +2,26 @@
 ; Work in progress demo for Star Fox 1980
 ;-----------------------------------------
 ;-----------------------------Macros-------------------------------
-HEALTH		equ $fb
-SCORE		equ $fc
-PLAYERPOS	equ $fd
-BOSSPOS		equ $fe
+PLAYER_HEALTH	equ $fb
+PLAYER_POS		equ $fc
+BOSS_POS		equ $fd
+BOSS_HEALTH		equ $fe
+ENEMIES			equ #6
+ENEMY_TYPE		equ $033c
+ENEMY_POS		equ $033c + (ENEMIES + 1)
 
-CHROUT		equ $ffd2
-RESET		equ $fd22
-GETIN		equ $ffe4
-SOUND1		equ $900a
-SOUND2		equ $900b
-SOUND3		equ $900c
-NOISE		equ $900d
-VOLUME		equ $900e
-SCRCOLOR	equ $900f
-TXTCOLOR	equ $0286
+CHROUT			equ $ffd2
+RESET			equ $fd22
+GETIN			equ $ffe4
+SOUND1			equ $900a
+SOUND2			equ $900b
+SOUND3			equ $900c
+NOISE			equ $900d
+VOLUME			equ $900e
+SCRCOLOR		equ $900f
+TXTCOLOR		equ $0286
 
-SETTIM		equ $f767
+SETTIM			equ $f767
 ;----------------------------End Macros----------------------------
 
 
@@ -74,13 +77,13 @@ init:
 	;sty $960a				 	;
 	
 	lda #$96
-	sta PLAYERPOS				; we are treating this location as ram, it contains the offset to add to the screen
+	sta PLAYER_POS				; we are treating this location as ram, it contains the offset to add to the screen
 
 
 
 ;----------------------------Variable initialization---------------------------
 	ldy #$03
-	sty HEALTH
+	sty PLAYER_HEALTH
 
 
 ;----------------------------------music loop----------------------------------
@@ -90,11 +93,11 @@ init:
 
 playMusic:
 
-	ldy #$13					;start of loop counter, music has 19 notes in it (13 in hex)
+	ldy #$23					;start of loop counter, music has 35 notes in it (23 in hex)
   
 loopMusic:
 
-	LDA musicDuration,y
+	LDA #$01
 	TYA							; transferring y to a in prep to preserve it
 	PHA
 	PHA							; the first thing in the stack is the duration of the music 
@@ -102,9 +105,9 @@ loopMusic:
 	
 	
 anotherLoop:
-	LDA musicNote,y
+	LDA main_notes,y
 	PHA							; the music note to play
-	LDA musicRegister,y 		; the register in now in A
+	LDA main_music_registers,y 	; the register in now in A
 	TAX 						; the music register is now in x
 	pla 						; the music note to play is now in a
 	sta $9000,x 				; the music note that needs to be played is now active in the indicated register 
@@ -138,7 +141,6 @@ endd2:
 
 ;-------------------------------Main game loop-------------------------------
 
-
 gameloop:
 
 	jsr refresh
@@ -153,8 +155,6 @@ gameloop:
 
 	lda #64						; reset the key pressed
 	sta key_pressed
-
-	;jmp gameloop
 
 	rts
 
@@ -172,46 +172,46 @@ dosum:
 
 collisioncheck:
 
-	ldx PLAYERPOS
+	ldx PLAYER_POS
 	cpx #$8c
-	beq predecHealth
+	beq predec_player_health
 
-	ldx PLAYERPOS
+	ldx PLAYER_POS
 	cpx #$a1
-	beq predecHealth2
+	beq predec_player_health2
 
 	jmp next3
 
 
-predecHealth:
+predec_player_health:
 	lda #18						; reset the key pressed
 	jmp next2
 
-predecHealth2:
+predec_player_health2:
 	lda #17						; reset the key pressed
 next2:
 	sta key_pressed
 	jsr moveplayer
 
 
-decrementHealth:
+decr_player_health:
  
-	jsr updateHealth
-	ldy HEALTH
+	jsr update_player_health
+	ldy PLAYER_HEALTH
 	cpy #$00
 	bne next3
 	jsr gameover
 
 next3:
-	RTS
+	rts
 
 
-updateHealth:
-	ldx HEALTH
+update_player_health:
+	ldx PLAYER_HEALTH
 	dex
 	lda #$00					; blank
 	sta $1fe4 ,x
-	stx HEALTH
+	stx PLAYER_HEALTH
 	rts
 
 
@@ -231,7 +231,6 @@ gameover:
 ;----------------------------graphics---------------------------
 refresh:
 
-
 	lda #$00			   
 	ldx #$ff
 
@@ -250,78 +249,57 @@ refreshloop2:
 	bne refreshloop2
 	sta $1f00 ,x 
 
-
 	rts
 
 
 drawboss:
 
 	ldy #$07					; draw boss
-	sty $1e60					;
-	ldy #$02
-	sty $9660
-	
-	ldy #$08					; draw boss
 	sty $1e61					;
 	ldy #$02
 	sty $9661
 	
-	ldy #$09					; draw boss
+	ldy #$08					; draw boss
 	sty $1e62					;
 	ldy #$02
 	sty $9662
 	
-	ldy #$0a					; draw boss
+	ldy #$09					; draw boss
 	sty $1e63					;
 	ldy #$02
 	sty $9663
 	
-	ldy #$0b					; draw boss
+	ldy #$0a					; draw boss
 	sty $1e64					;
 	ldy #$02
 	sty $9664
 	
-	ldy #$0c					; draw boss
-	sty $1e65					;
-	ldy #$02
-	sty $9665
-	
-	ldy #$0d					; draw boss
-	sty $1e76					;
-	ldy #$02
-	sty $9676
-	
-	ldy #$0e					; draw boss
+	ldy #$0b					; draw boss
 	sty $1e77					;
 	ldy #$02
 	sty $9677
 	
-	ldy #$0f					; draw boss
+	ldy #$0c					; draw boss
 	sty $1e78					;
 	ldy #$02
 	sty $9678
 	
-	ldy #$10					; draw boss
+	ldy #$0d					; draw boss
 	sty $1e79					;
 	ldy #$02
 	sty $9679
 	
-	ldy #$11					; draw boss
+	ldy #$0e					; draw boss
 	sty $1e7a					;
 	ldy #$02
 	sty $967a
-	
-	ldy #$12					; draw boss
-	sty $1e7b					;
-	ldy #$02
-	sty $967b
 
 	rts	   
 
 
 moveplayer:
 
-	ldx PLAYERPOS
+	ldx PLAYER_POS
 	lda key_pressed
 
 	cmp #18
@@ -339,10 +317,10 @@ decrement:
 	dex 
 next:
 
-	stx PLAYERPOS	 
+	stx PLAYER_POS	 
 
 	lda #$03				; current starfighter character
-	ldx PLAYERPOS
+	ldx PLAYER_POS
 	sta $1f00 ,x			; store it at the current location
 	
 	lda #$06				; color code
@@ -366,12 +344,21 @@ titlescreen:
 	dc.b	"   PRESS ANY BUTTON", $0d
 
 
-musicDuration:	
-	dc.b	#$00, #$08, #$04, #$08, #$02, #$04, #$02, #$04, #$02, #$08, #$02, #$02, #$02, #$02, #$02, #$08, #$02, #$02, #$02, #$02
+main_notes:				; Music notes in hex in order of last note to first note
+	dc.b	#$00, #$93, #$a3, #$93, #$af, #$93, #$b7, #$93, #$9f, #$91, #$93, #$a3, #$93, #$af, #$93, #$b7, #$93, #$a3, #$9f, #$93, #$b7, #$93, #$97, #$93, #$00, #$93, #$a3, #$93, #$00, #$93, #$af, #$93, #$00, #$93, #$b7, #$93
 
-musicNote:			; Music notes in hex in order of last note to first note
-	dc.b	#$00, #$97, #$93, #$a3, #$99, #$93, #$99, #$93, #$99, #$af, #$99, #$93, #$00, #$93, #$99, #$b7, #$00, #$93, #$00, #$93
+main_music_registers:	; this must correspond with the notes. for example if there are 20 notes then there are 20 values in this thing 
+	dc.b	#$00, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c
 
-musicRegister:		; this must correspond with the notes. for example if there are 20 notes then there are 20 values in this thing 
-	dc.b	#$00, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c
+gameover_notes:			; Game over tune notes (12)
+	dc.b	#$00, #$00, #$00, #$b7, #$b7, #$b7, #$b7, #$bf, #$c3, #$c9, #$cf, #$d1, #$d7, #$db
+	
+victory_notes:			; Victory tune notes (12)
+	dc.b	#$00, #$cb, #$cb, #$cb, #$c9, #$bb, #$c3, #$b4, #$00, #$b4, #$b7, #$a8, #$93, #$83
+
+tune_registers:
+	dc.b	#$00, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c
+
+laser_sound:
+	dc.b	#$00, #$109, #$109, #$121
 
