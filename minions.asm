@@ -64,42 +64,40 @@ end_draw_minion:
 
 minion_move_left:
 	ldx MINION_IND
-	ldy minion_pos ,x
-	cpy #$6e
+	lda minion_pos ,x
+	cmp #$6e
 	beq minion_move_end
-	cpy #$84
+	cmp #$84
 	beq minion_move_end
-	cpy #$9a
+	cmp #$9a
 	beq minion_move_end
-	cpy #$b0
+	cmp #$b0
 	beq minion_move_end
-	cpy #$c6
+	cmp #$c6
 	beq minion_move_end
-	cpy #$dc
+	cmp #$dc
 	beq minion_move_end
 
-	dey
-	sty minion_pos ,x
+	dec minion_pos ,x
 	jmp minion_move_end
 
 minion_move_right:
 	ldx MINION_IND
-	ldy minion_pos ,x
-	cpy #$6e
+	lda minion_pos ,x
+	cmp #$83
 	beq minion_move_end
-	cpy #$84
+	cmp #$99
 	beq minion_move_end
-	cpy #$9a
+	cmp #$af
 	beq minion_move_end
-	cpy #$b0
+	cmp #$c5
 	beq minion_move_end
-	cpy #$c6
+	cmp #$db
 	beq minion_move_end
-	cpy #$dc
+	cmp #$f1
 	beq minion_move_end
 
-	iny
-	sty minion_pos ,x
+	dec minion_pos ,x
 
 minion_move_end:
 	inx

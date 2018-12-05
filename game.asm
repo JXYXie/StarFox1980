@@ -172,6 +172,18 @@ gameloop:
 	lda #64						; reset the key pressed
 	sta key_pressed
 
+
+    lda #$05 ;load the character of the laser
+    ldx #$00
+    sta #$1f00,x ; the laser is now stored here, 1f00 + 30,000 = 9430
+
+    jsr writePlayerShot
+    jsr drawPlayerShot
+
+    ;jsr writeEnemyShot
+    ;jsr drawEnemyShot
+
+
 	rts
 
 
@@ -300,6 +312,347 @@ end:
 	rts
 
 
+
+;-----------player laser subroutines
+
+writePlayerShot:
+    ; find the first available space that is #$00
+    ;write #$1f to first value, then the players x position but shifted up 1 on the grid
+    ; calls another subroutine to draw the shot
+
+    ldy #$08    ; this is 2x the number of shots we are allowing to be on screen, the max num is currently 4
+    
+wpsLoop:
+    LDA playerShots,y ;the "first" thing holds 1e, 1f or 00. if it is 00 we want to write to it
+    cmp #$00
+    beq exitWpsLoop
+    dey     ; dec y so it points to the "suffix" of 1e or 1f
+    dey     ; dec again so it is pointing to the next prefix of 1e or 1f
+    bne wpsLoop
+    jmp endwpsLoop  ;if the loop finishes without triggering exit, then no #$00 was found
+
+
+exitWpsLoop: ;the y register now contains the offset we need to write to for either 1f or 1e 
+    lda #$1f
+    sta playerShots,y
+    dey ;decrement to prepare for storing the suffix to the appropriate area in data
+    tya ; prep y to be pushed to stack for storage
+    PHA ; the y index is now in the stack
+    LDA PLAYER_POS
+    jsr shiftUp
+    TAX ; X is temporarily holding the player pos value 
+    PLA ; pull the y value into a
+    TAY ;transfer value back to y
+    TXA ;transfer the player pos back into A
+    sta playerShots ,y ; now the suffix should be properly stored 
+
+endwpsLoop:
+    rts 
+
+drawPlayerShot:
+    ;pull the first thing from the list that is not 00, draw laser to the specified location, then iterate through the location and repeat 
+    ;also need a backstop subroutine to stop the fire from going past the screen in both directions, will likely need 2
+    ;the shot is "incremented up" in this. if it were to hit a backstop then it is reset to 00
+
+    ldy #$08    ; this is 2x the number of shots we are allowing to be on screen, the max num is currently 4  
+    
+dpsLoop: 
+    LDA playerShots,y ;the "first" thing holds 1e, 1f or 00. if it is 00 we want to write to it
+    cmp #$00
+    beq enddpsloop
+
+    cmp #$1f
+    bne nextdps 
+    ;draw the laser then shift it up one
+    dey ; the gets  the address ready for the suffix value for the laser
+    lda playerShots,y 
+    tax ;transfer a to x to get ready for another aaaa ,x to write the laser to memory
+    lda #$11 ;load the character of the laser
+
+    sta #$1f00,x ; the laser is now stored here, 1f00 + 30,000 = 9430
+    ;lda #$04 ;color code
+    ;sta 9430 ,x ; x currently contains the offset we want to shift up
+
+    tya
+    pha
+    jsr shiftupfordps ;x will contain the value that was shifted up 
+    pla
+    tay ;need to retrieve the y value corresponding to the list
+    jsr shiftupfordps2
+    
+    ;cpx #$ea
+    ;bne skip
+    ;jsr spinloop
+
+;skip:
+    txa ; the offset of x calculated is now in a for a aaaa,y address
+    sta playerShots ,y
+
+    
+    jmp enddpsloop2
+
+
+nextdps: ; this assumes that the prefix is 1e
+
+
+    dey ; the gets  the address ready for the suffix value for the laser
+    LDA playerShots ,y 
+    TAX ;transfer a to x to get ready for another aaaa ,x to write the laser to memory
+    lda #$11 ;load the character of the laser
+
+    sta #$1e00 ,x ; the laser is now stored here, 1f00 + 30,000 = 9430
+    lda #$04 ;color code
+    sta 9430 ,x ; x currently contains the offset we want to shift up
+
+    tya
+    pha
+    jsr shiftupfordps ;x will contain the value that was shifted up 
+
+    pla
+    tay ;need to retrieve the y value corresponding to the list
+    jsr shiftupfordps3
+    
+    txa ; the offset of x calculated is now in a for a aaaa,y address
+    sta playerShots ,y
+
+
+enddpsloop2:
+    dey ; the two deys prep for the next cycle 
+    bne dpsLoop
+    rts
+
+
+enddpsloop: ; this ends it for a 00 value , need another 1 for non 00 values 
+    dey
+    dey ; the two deys prep for the next cycle 
+    bne dpsLoop
+    rts
+
+
+shiftupfordps3: ; the x register contains the value to be compared
+
+    tya
+    pha
+
+    ldy #$16 ; need add 22 to shift something 1 char up
+
+shiftuploop3:
+    
+    sty temp
+
+    cpx temp
+    beq sulnext1
+
+    dey
+    bne shiftuploop3 ; don't want to run the alg when x = 0
+
+    cpx #$00
+    bne sulend3
+
+    ldx #$ea
+    jmp sulend1
+    ;the branch should end here
+
+sulnext1:  ;now the x register contains how much we want to add to 234, x must be at least1
+
+    ldy #$ea
+
+snlooptop1:
+
+    iny
+    dex 
+    bne snlooptop1 ;y contains the offset of x after this, move it back to x
+
+    TYA
+    TAX ; value now back in x
+
+sulend1:
+
+    pla
+    tay
+
+    iny
+
+    LDA #$00
+    STA playerShots ,y
+
+
+    dey
+    
+    TYA
+    PHA
+
+sulend3:
+
+    pla
+    tay
+
+    rts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+shiftupfordps2: ; the x register contains the value to be compared
+
+    TYA
+    PHA
+
+    ldy #$15 ; need add 22 to shift something 1 char up
+
+    cpx #$00
+    beq endendend
+
+
+shiftuploop2:
+    
+    sty temp
+
+    cpx temp
+    beq sulnext
+
+    dey
+    ;cpy #$01
+    bne shiftuploop2 ; don't want to run the alg when x = 0
+
+    cpx #$00
+    bne sulend2
+
+    ldx #$ea
+    jmp sulend
+    ;the branch should end here
+
+sulnext:  ;now the x register contains how much we want to add to 234, x must be at least1
+
+    ldy #$ea 
+
+snlooptop:
+
+    iny
+    dex 
+    bne snlooptop ;y contains the offset of x after this, move it back to x
+
+    TYA
+    TAX ; value now back in x
+
+sulend:
+
+    pla
+    tay
+
+    iny
+
+    LDA #$1e
+    STA playerShots ,y
+
+
+    dey
+    
+    TYA
+    PHA
+
+sulend2:
+
+    pla
+    tay
+
+    rts
+     
+endendend:
+    ldx #$ea
+
+    jmp sulend
+
+
+
+
+shiftupfordps:;actually decrements, but shifts stuff up the screen
+
+    ;ldy #$16 ; need add 22 to shift something 1 char up
+
+shiftuploop1:
+    cpx #$00
+    beq endsul1
+    txa
+    sbc #$16
+    tax 
+
+    ;dex
+    ;cpx #$00
+    ;beq endsul1
+    ;dey
+    ;bne shiftuploop1
+endsul1:
+    RTS
+
+
+
+
+spinloop:
+
+
+    ;lda $00c5		 ; current key held down -> page 179 of vic20 manual
+    ;jsr $ffd2
+
+    ldx #0
+    nop         ;nops used as busy work
+    nop
+    dex
+    bne spinloop
+
+    rts
+
+
+
+
+
+
+
+
+
+
+
+shiftUp: ;actually decrements, but shifts stuff up the screen
+
+;    ldx #$16 ; need add 22 to shift something 1 char up
+;    TAY ; transfer a to y for decrement(moves stuff higher) 
+    sec
+    sbc #$16
+
+;shiftuploop:
+;    dey
+;    dex
+;    bne shiftuploop
+;    TYA
+    rts
 	include		"charset.asm"
  
 key_pressed: dc.b #64  ; set to default 64 for no key pressed
@@ -313,6 +666,20 @@ titlescreen:
 	dc.b	$0d, $0d, $0d, $0d, $0d, $0d
 	dc.b	"   PRESS ANY BUTTON", $0d
 
+temp:
+    dc.b:   #$00
+
+
+
+;---------------------------------------------------position tracking--------------------------------------------
+
+;limit of 4 "shots" for now
+
+playerShots: 
+    dc.b    #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00
+
+enemyShots:
+    dc.b    #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00
 
 main_notes:				; Music notes in hex in order of last note to first note
 	dc.b	#$00, #$93, #$a3, #$93, #$af, #$93, #$b7, #$93, #$9f, #$91, #$93, #$a3, #$93, #$af, #$93, #$b7, #$93, #$a3, #$9f, #$93, #$b7, #$93, #$97, #$93, #$00, #$93, #$a3, #$93, #$00, #$93, #$af, #$93, #$00, #$93, #$b7, #$93
