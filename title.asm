@@ -21,4 +21,4 @@ titleloop:
 titlewait:
     jsr GETIN            ; pressing any input ends title screen
     beq titlewait
-    jmp init
+    jmp draw_init

@@ -1,0 +1,625 @@
+------- FILE game.asm LEVEL 1 PASS 2
+      1  1d7d ????						;-----------------------------------------
+      2  1d7d ????						; Work in progress demo for Star Fox 1980
+      3  1d7d ????						;-----------------------------------------
+      4  1d7d ????						;-----------------------------Macros-------------------------------
+      5  1d7d ????	       00 57	   PLAYER_HEALTH equ	$57
+      6  1d7d ????	       00 58	   PLAYER_POS equ	$58
+      7  1d7d ????	       00 59	   BOSS_POS   equ	$59
+      8  1d7d ????	       00 5a	   BOSS_HEALTH equ	$5a
+      9  1d7d ????	       00 5b	   SCORE      equ	$5b
+     10  1d7d ????	       00 5c	   HISCORE    equ	$5c
+     11  1d7d ????	       00 5d	   MINIONS    equ	$5d
+     12  1d7d ????	       00 5e	   MINION_IND equ	$5e
+     13  1d7d ????	       00 5f	   LEVEL      equ	$5f
+     14  1d7d ????	       00 3c	   RANDNUM    equ	60
+     15  1d7d ????
+     16  1d7d ????	       ff d2	   CHROUT     equ	$ffd2
+     17  1d7d ????	       fd 22	   RESET      equ	$fd22
+     18  1d7d ????	       ff e4	   GETIN      equ	$ffe4
+     19  1d7d ????	       90 0a	   SOUND1     equ	$900a
+     20  1d7d ????	       90 0b	   SOUND2     equ	$900b
+     21  1d7d ????	       90 0c	   SOUND3     equ	$900c
+     22  1d7d ????	       90 0d	   NOISE      equ	$900d
+     23  1d7d ????	       90 0e	   VOLUME     equ	$900e
+     24  1d7d ????	       90 0f	   SCRCOLOR   equ	$900f
+     25  1d7d ????	       02 86	   TXTCOLOR   equ	$0286
+     26  1d7d ????
+     27  1d7d ????	       f7 67	   SETTIM     equ	$f767
+     28  1d7d ????						;----------------------------End Macros----------------------------
+     29  1d7d ????
+     30  1d7d ????
+     31  1d7d ????						;----------------------------Basic Stub----------------------------
+     32  1d7d ????				      Processor	6502
+     33  1001					      org	$1001	; Unexpanded VIC
+     34  1001
+     35  1001							; BASIC stub (unexpanded vic)
+     36  1001		       0b 10		      dc.w	$100b	; Pointer to next BASIC line
+     37  1003		       bd 07		      dc.w	1981	; BASIC Line#
+     38  1005		       9e		      dc.b	$9e	; BASIC SYS token
+     39  1006		       34 31 30 39	      dc.b	$34,$31,$30,$39	; 4109 (ML start)
+     40  100a		       00		      dc.b	0	; End of BASIC line
+     41  100b		       00 00		      dc.w	0	; End of BASIC program
+     42  100d							;-----------------------------End Stub----------------------------
+     43  100d
+------- FILE title.asm LEVEL 2 PASS 2
+      0  100d					      include	"title.asm"
+      1  100d							;---------------------------Main Title Screen------------------------------
+      2  100d				   title
+      3  100d		       20 5f e5 	      jsr	$e55f	; clear the screen
+      4  1010
+      5  1010		       a9 40		      lda	#$40	; load new text colour
+      6  1012		       8d 86 02 	      sta	TXTCOLOR	; change text colour
+      7  1015
+      8  1015		       a9 19		      lda	#$19	; load new background colour
+      9  1017		       8d 0f 90 	      sta	SCRCOLOR	; change background and border colours
+     10  101a
+     11  101a							; loop that iterates through title characters
+     12  101a		       a0 00		      ldy	#00	; initialize counter at 0
+     13  101c
+     14  101c				   titleloop
+     15  101c		       b9 99 1c 	      lda	titlescreen,y
+     16  101f		       20 d2 ff 	      jsr	CHROUT
+     17  1022		       c8		      iny
+     18  1023		       c0 65		      cpy	#101	; 101 characters in the title screen
+     19  1025		       d0 f5		      bne	titleloop
+     20  1027
+     21  1027				   titlewait
+     22  1027		       20 e4 ff 	      jsr	GETIN	; pressing any input ends title screen
+     23  102a		       f0 fb		      beq	titlewait
+     24  102c		       4c 73 11 	      jmp	draw_init
+------- FILE game.asm
+------- FILE boss.asm LEVEL 2 PASS 2
+      0  102f					      include	"boss.asm"
+      1  102f							;-----------------------------------------
+      2  102f							; Handles boss spawning and movement
+      3  102f							;-----------------------------------------
+      4  102f
+      5  102f				   spawn_boss
+      6  102f		       a2 05		      ldx	#$05	; Initialize boss health
+      7  1031		       86 5a		      stx	BOSS_HEALTH
+      8  1033		       a2 1f		      ldx	#$1f	; Boss position
+      9  1035		       86 59		      stx	BOSS_POS	;
+     10  1037		       60		      rts
+     11  1038
+     12  1038				   draw_boss
+     13  1038
+     14  1038		       a6 59		      ldx	BOSS_POS
+     15  103a		       a9 07		      lda	#$07	; Boss top left character
+     16  103c		       9d 00 1e 	      sta	$1e00 ,x	; Store it at the right locatin
+     17  103f		       a9 02		      lda	#$02	; Colour
+     18  1041		       9d 00 96 	      sta	$9600 ,x
+     19  1044
+     20  1044		       e8		      inx
+     21  1045		       a9 08		      lda	#$08	; Boss top mid-left character
+     22  1047		       9d 00 1e 	      sta	$1e00 ,x	; Store it at the right locatin
+     23  104a		       a9 02		      lda	#$02	; Colour
+     24  104c		       9d 00 96 	      sta	$9600 ,x
+     25  104f
+     26  104f		       e8		      inx
+     27  1050		       a9 09		      lda	#$09	; Boss top mid-right character
+     28  1052		       9d 00 1e 	      sta	$1e00 ,x	; Store it at the right locatin
+     29  1055		       a9 02		      lda	#$02	; Colour
+     30  1057		       9d 00 96 	      sta	$9600 ,x
+     31  105a
+     32  105a		       e8		      inx
+     33  105b		       a9 0a		      lda	#$0a	; Boss top right character
+     34  105d		       9d 00 1e 	      sta	$1e00 ,x	; Store it at the right locatin
+     35  1060		       a9 02		      lda	#$02	; Colour
+     36  1062		       9d 00 96 	      sta	$9600 ,x
+     37  1065
+     38  1065		       a5 59		      lda	BOSS_POS	; Get boss position
+     39  1067		       18		      clc
+     40  1068		       69 16		      adc	#$16	; Get the bottom row
+     41  106a		       aa		      tax		; Transfer it to x register
+     42  106b		       a9 0b		      lda	#$0b	; Boss bottom left character
+     43  106d		       9d 00 1e 	      sta	$1e00 ,x	; Store it at the right locatin
+     44  1070		       a9 02		      lda	#$02	; Colour
+     45  1072		       9d 00 96 	      sta	$9600 ,x
+     46  1075
+     47  1075		       e8		      inx
+     48  1076		       a9 0c		      lda	#$0c	; Boss bottom mid-left character
+     49  1078		       9d 00 1e 	      sta	$1e00 ,x	; Store it at the right locatin
+     50  107b		       a9 02		      lda	#$02	; Colour
+     51  107d		       9d 00 96 	      sta	$9600 ,x
+     52  1080
+     53  1080		       e8		      inx
+     54  1081		       a9 0d		      lda	#$0d	; Boss bottom mid-right character
+     55  1083		       9d 00 1e 	      sta	$1e00 ,x	; Store it at the right locatin
+     56  1086		       a9 02		      lda	#$02	; Colour
+     57  1088		       9d 00 96 	      sta	$9600 ,x
+     58  108b
+     59  108b		       e8		      inx
+     60  108c		       a9 0e		      lda	#$0e	; Boss bottom right character
+     61  108e		       9d 00 1e 	      sta	$1e00 ,x	; Store it at the right locatin
+     62  1091		       a9 02		      lda	#$02	; Colour
+     63  1093		       9d 00 96 	      sta	$9600 ,x
+     64  1096
+     65  1096		       60		      rts
+     66  1097
+     67  1097				   boss_move_left
+     68  1097		       a6 59		      ldx	BOSS_POS	; Get current boss location
+     69  1099		       e0 16		      cpx	#$16	; is it touching the left boundary
+     70  109b		       f0 04		      beq	boss_move_right	; if so move right instead
+     71  109d		       ca		      dex		; if not move left
+     72  109e		       86 59		      stx	BOSS_POS	; and update new location
+     73  10a0		       60		      rts
+     74  10a1
+     75  10a1				   boss_move_right
+     76  10a1		       a6 59		      ldx	BOSS_POS	; Get current boss location
+     77  10a3		       e0 28		      cpx	#$28	; is it touching right boundary
+     78  10a5		       f0 f0		      beq	boss_move_left	; if so move left instead
+     79  10a7		       e8		      inx		; if not move right
+     80  10a8		       86 59		      stx	BOSS_POS	; and update new location
+     81  10aa		       60		      rts
+     82  10ab
+     83  10ab				   boss_ai
+     84  10ab		       a5 59		      lda	BOSS_POS	; Get the boss position
+     85  10ad		       69 a2		      adc	#$a2	; Add an offset
+     86  10af		       c5 58		      cmp	PLAYER_POS	; Compare it with player position
+     87  10b1		       f0 04		      beq	boss_ai_shoot	; If the boss is where the player is shoot
+     88  10b3		       90 ec		      bcc	boss_move_right	; If player is to the right of boss move right
+     89  10b5		       b0 e0		      bcs	boss_move_left	; If player to the left of boss move left
+     90  10b7
+     91  10b7				   boss_ai_shoot
+     92  10b7		       60		      rts
+     93  10b8
+     94  10b8
+------- FILE game.asm
+------- FILE minions.asm LEVEL 2 PASS 2
+      0  10b8					      include	"minions.asm"
+      1  10b8							;-----------------------------------------
+      2  10b8							; Handles minions spawning and movement
+      3  10b8							;-----------------------------------------
+      4  10b8
+      5  10b8				   spawn_minions
+      6  10b8		       20 66 11 	      jsr	randgen	; Generate random number
+      7  10bb		       46 3c		      lsr	RANDNUM	; shift bit 0
+      8  10bd		       90 02		      bcc	spawn_laser_minion	; If even number generate enemy type 1
+      9  10bf		       b0 0f		      bcs	spawn_rocket_minion	; If odd number generate enemy type 2
+     10  10c1
+     11  10c1				   spawn_laser_minion
+     12  10c1		       a6 5e		      ldx	MINION_IND	; Get the current index
+     13  10c3		       a9 01		      lda	#$01	; 01 represents laser
+     14  10c5		       9d 75 1d 	      sta	minion_status ,x	; Save the status
+     15  10c8		       e8		      inx		; Increment the index
+     16  10c9		       86 5e		      stx	MINION_IND	; Save the new index
+     17  10cb		       e0 04		      cpx	#$04	; If not at the end of the index
+     18  10cd		       d0 e9		      bne	spawn_minions	; Keep spawning more minions
+     19  10cf		       60		      rts
+     20  10d0
+     21  10d0				   spawn_rocket_minion
+     22  10d0		       a6 5e		      ldx	MINION_IND	; Get the current index
+     23  10d2		       a9 02		      lda	#$02	; 02 represents rocket
+     24  10d4		       9d 75 1d 	      sta	minion_status ,x	; Save the status
+     25  10d7		       e8		      inx		; Increment the index
+     26  10d8		       86 5e		      stx	MINION_IND	; Save the new index
+     27  10da		       e0 04		      cpx	#$04	; If not at the end of the index
+     28  10dc		       d0 da		      bne	spawn_minions
+     29  10de		       60		      rts
+     30  10df
+     31  10df
+     32  10df				   draw_minions
+     33  10df		       a6 5e		      ldx	MINION_IND	; Get the current minion index
+     34  10e1		       bc 75 1d 	      ldy	minion_status ,x	; Get the minion status
+     35  10e4		       c0 01		      cpy	#$01	; Is it laser minion?
+     36  10e6		       f0 06		      beq	draw_laser_minion	; If so draw it
+     37  10e8		       c0 02		      cpy	#$02	; Is it rocket minion?
+     38  10ea		       f0 14		      beq	draw_rocket_minion	; Draw it
+     39  10ec		       d0 21		      bne	end_draw_minion	; Otherwise dont draw a thing
+     40  10ee				   draw_laser_minion
+     41  10ee		       a6 5e		      ldx	MINION_IND	; Get the current minion index
+     42  10f0		       bc 79 1d 	      ldy	minion_pos ,x	; Get the position of the minion
+     43  10f3		       a9 0f		      lda	#$0f	; Laser minion char
+     44  10f5		       99 00 1e 	      sta	$1e00 ,y	; At the location
+     45  10f8		       a9 02		      lda	#$02
+     46  10fa		       99 00 96 	      sta	$9600 ,y	; Color location
+     47  10fd		       4c 0f 11 	      jmp	end_draw_minion	; Done drawing
+     48  1100
+     49  1100				   draw_rocket_minion
+     50  1100		       a6 5e		      ldx	MINION_IND	; Get the current minion index
+     51  1102		       bc 79 1d 	      ldy	minion_pos ,x	; Get the position of the minion
+     52  1105		       a9 10		      lda	#$10	; Rocket minion char
+     53  1107		       99 00 1e 	      sta	$1e00 ,y	; At the location
+     54  110a		       a9 05		      lda	#$05
+     55  110c		       99 00 96 	      sta	$9600 ,y	; Color location
+     56  110f
+     57  110f				   end_draw_minion
+     58  110f		       e8		      inx		; Next minion
+     59  1110		       86 5e		      stx	MINION_IND	; store the new minion
+     60  1112		       e0 04		      cpx	#$04	; Are we done drawing minions?
+     61  1114		       d0 c9		      bne	draw_minions	; If not keep drawing
+     62  1116
+     63  1116		       60		      rts
+     64  1117
+     65  1117				   minion_move_left
+     66  1117		       a6 5e		      ldx	MINION_IND
+     67  1119		       bc 79 1d 	      ldy	minion_pos ,x
+     68  111c		       c0 6e		      cpy	#$6e
+     69  111e		       f0 3a		      beq	minion_move_end
+     70  1120		       c0 84		      cpy	#$84
+     71  1122		       f0 36		      beq	minion_move_end
+     72  1124		       c0 9a		      cpy	#$9a
+     73  1126		       f0 32		      beq	minion_move_end
+     74  1128		       c0 b0		      cpy	#$b0
+     75  112a		       f0 2e		      beq	minion_move_end
+     76  112c		       c0 c6		      cpy	#$c6
+     77  112e		       f0 2a		      beq	minion_move_end
+     78  1130		       c0 dc		      cpy	#$dc
+     79  1132		       f0 26		      beq	minion_move_end
+     80  1134
+     81  1134		       88		      dey
+minions.asm (82): error: Value in 'sty minion_pos ,x' must be <$100.
+     82  1135		       94 79		      sty	minion_pos ,x
+     83  1137		       4c 5a 11 	      jmp	minion_move_end
+     84  113a
+     85  113a				   minion_move_right
+     86  113a		       a6 5e		      ldx	MINION_IND
+     87  113c		       bc 79 1d 	      ldy	minion_pos ,x
+     88  113f		       c0 6e		      cpy	#$6e
+     89  1141		       f0 17		      beq	minion_move_end
+     90  1143		       c0 84		      cpy	#$84
+     91  1145		       f0 13		      beq	minion_move_end
+     92  1147		       c0 9a		      cpy	#$9a
+     93  1149		       f0 0f		      beq	minion_move_end
+     94  114b		       c0 b0		      cpy	#$b0
+     95  114d		       f0 0b		      beq	minion_move_end
+     96  114f		       c0 c6		      cpy	#$c6
+     97  1151		       f0 07		      beq	minion_move_end
+     98  1153		       c0 dc		      cpy	#$dc
+     99  1155		       f0 03		      beq	minion_move_end
+    100  1157
+    101  1157		       c8		      iny
+minions.asm (102): error: Value in 'sty minion_pos ,x' must be <$100.
+    102  1158		       94 79		      sty	minion_pos ,x
+    103  115a
+    104  115a				   minion_move_end
+    105  115a		       e8		      inx
+    106  115b		       86 5e		      stx	MINION_IND
+    107  115d
+    108  115d		       e4 5d		      cpx	MINIONS
+    109  115f		       d0 01		      bne	minion_ai
+    110  1161
+    111  1161		       60		      rts
+    112  1162
+    113  1162				   minion_ai
+    114  1162		       4c 17 11 	      jmp	minion_move_left
+    115  1165
+    116  1165		       60		      rts
+    117  1166
+    118  1166
+------- FILE game.asm
+------- FILE utilities.asm LEVEL 2 PASS 2
+      0  1166					      include	"utilities.asm"
+      1  1166							;-------------------------------------------------------
+      2  1166							; Math utility subroutines and Random number generation
+      3  1166							;
+      4  1166							;-------------------------------------------------------
+      5  1166							;-------------------------------------------------------
+      6  1166							; Generate random number and store it
+      7  1166							;-------------------------------------------------------
+      8  1166				   randgen
+      9  1166
+     10  1166		       ad 14 91 	      lda	$9114	; Timer 1 low byte
+     11  1169		       6d 18 91 	      adc	$9118	; Timer 2 low byte
+     12  116c		       18		      clc		; Clear carry
+     13  116d		       85 3c		      sta	RANDNUM	; Now store the temporary random number
+     14  116f		       60		      rts
+------- FILE game.asm
+     48  1170
+     49  1170		       4c 0d 10 	      jmp	title
+     50  1173
+     51  1173							;---------------------------Initialization-----------------------------------
+     52  1173				   draw_init
+     53  1173
+     54  1173		       a9 08		      lda	#$08	; load new black background colour
+     55  1175		       8d 0f 90 	      sta	SCRCOLOR	; change background and border colours
+     56  1178
+     57  1178		       a9 ff		      lda	#$ff	; loading the value into $9005 makes the VIC not look into the rom location for characters, instead the vic looks at memory starting at $1c00
+     58  117a		       8d 05 90 	      sta	$9005	; the above can be found on pages 85 and 86 of the VIC 20 manual
+     59  117d
+     60  117d		       20 5f e5 	      jsr	$e55f	; clear screen
+     61  1180
+     62  1180		       20 7b 12 	      jsr	refresh
+     63  1183
+     64  1183							; Draw hearts
+     65  1183		       a9 02		      lda	#$02	; Heart character
+     66  1185		       8d e4 1f 	      sta	$1fe4
+     67  1188		       8d e4 97 	      sta	$97e4
+     68  118b		       8d e5 1f 	      sta	$1fe5
+     69  118e		       8d e5 97 	      sta	$97e5
+     70  1191		       8d e6 1f 	      sta	$1fe6
+     71  1194		       8d e6 97 	      sta	$97e6
+     72  1197
+     73  1197		       a0 04		      ldy	#$04	; draw starfighter character
+     74  1199		       8c 96 1f 	      sty	$1f96	; 8086
+     75  119c
+     76  119c		       a0 06		      ldy	#$06	; color code
+     77  119e		       8c 96 97 	      sty	$9796	; 38806
+     78  11a1
+     79  11a1
+     80  11a1				   init
+     81  11a1							;------------------------------Game state/variable initialization-----------------------------
+     82  11a1		       a9 c2		      lda	#$c2
+     83  11a3		       85 58		      sta	PLAYER_POS	; We are treating this location as ram, it contains the offset to add to the screen
+     84  11a5		       a0 03		      ldy	#$03
+     85  11a7		       84 57		      sty	PLAYER_HEALTH
+     86  11a9
+     87  11a9		       20 2f 10 	      jsr	spawn_boss
+     88  11ac		       20 b8 10 	      jsr	spawn_minions
+     89  11af
+     90  11af		       a2 00		      ldx	#$00
+     91  11b1		       86 5b		      stx	SCORE
+     92  11b3		       86 5c		      stx	HISCORE
+     93  11b5		       86 5f		      stx	LEVEL
+     94  11b7		       86 5e		      stx	MINION_IND
+     95  11b9		       a2 04		      ldx	#$04
+     96  11bb		       86 5d		      stx	MINIONS
+     97  11bd
+     98  11bd							;----------------------------------music loop----------------------------------
+     99  11bd
+    100  11bd		       a9 0f		      lda	#$0f	; 15 is the max volume the speakers can be set at. The 1-15 values can be found at p(95,96) of the vic 20 manual
+    101  11bf		       8d 0e 90 	      sta	$900e	; 900e controls volume, is where the volume values are written to. this address can be found at p(95,96) of the vic 20 manual
+    102  11c2
+    103  11c2				   playMusic
+    104  11c2
+    105  11c2		       a0 23		      ldy	#$23	;start of loop counter, music has 35 notes in it (23 in hex)
+    106  11c4
+    107  11c4				   loopMusic
+    108  11c4
+    109  11c4		       a9 01		      lda	#$01
+    110  11c6		       98		      tya		; transferring y to a in prep to preserve it
+    111  11c7		       48		      pha
+    112  11c8		       48		      pha		; the first thing in the stack is the duration of the music
+    113  11c9							;TAX						;X holds amount of time loop must run to make 1 second, assuming 3 jiffies as the loop delay, the A register is now free to hold stuff
+    114  11c9
+    115  11c9
+    116  11c9				   anotherLoop
+    117  11c9		       b9 ff 1c 	      lda	main_notes,y
+    118  11cc		       48		      pha		; the music note to play
+    119  11cd		       b9 23 1d 	      lda	main_music_registers,y	; the register in now in A
+    120  11d0		       aa		      tax		; the music register is now in x
+    121  11d1		       68		      pla		; the music note to play is now in a
+    122  11d2		       9d 00 90 	      sta	$9000,x	; the music note that needs to be played is now active in the indicated register
+    123  11d5				   delan
+    124  11d5		       20 fd 11 	      jsr	gameloop
+    125  11d8		       20 28 12 	      jsr	delay
+    126  11db		       68		      pla		; pull the loop count to make a second from the stack
+    127  11dc		       aa		      tax		; loop count now in x
+    128  11dd		       d0 06		      bne	endd
+    129  11df		       ca		      dex		; x is decremented down
+    130  11e0		       8a		      txa		; transfer x to a in preparation to do a push to preserve the decrement value in the stack
+    131  11e1		       48		      pha		; push the decrement value into the stack
+    132  11e2		       4c d5 11 	      jmp	delan
+    133  11e5
+    134  11e5				   endd
+    135  11e5		       68		      pla
+    136  11e6		       a8		      tay		; y now contains the index counter thing again
+    137  11e7
+    138  11e7		       a9 00		      lda	#$00
+    139  11e9		       8d 0a 90 	      sta	SOUND1
+    140  11ec		       8d 0b 90 	      sta	SOUND2
+    141  11ef		       8d 0c 90 	      sta	SOUND3
+    142  11f2		       88		      dey
+    143  11f3		       c0 01		      cpy	#$01
+    144  11f5		       f0 03		      beq	endd2
+    145  11f7
+    146  11f7		       4c c4 11 	      jmp	loopMusic
+    147  11fa
+    148  11fa				   endd2
+    149  11fa		       4c c2 11 	      jmp	playMusic
+    150  11fd
+    151  11fd							;-------------------------------Main game loop-------------------------------
+    152  11fd
+    153  11fd				   gameloop
+    154  11fd
+    155  11fd		       20 7b 12 	      jsr	refresh
+    156  1200
+    157  1200		       a5 c5		      lda	$00c5	; get current pressed key
+    158  1202		       8d 98 1c 	      sta	key_pressed
+    159  1205
+    160  1205		       20 38 10 	      jsr	draw_boss
+    161  1208		       a2 00		      ldx	#$00	; Reset minion index counter
+    162  120a		       86 5e		      stx	MINION_IND
+    163  120c		       20 df 10 	      jsr	draw_minions
+    164  120f		       20 94 12 	      jsr	moveplayer
+    165  1212		       20 ab 10 	      jsr	boss_ai
+    166  1215		       a2 00		      ldx	#$00	; Reset minion index counter
+    167  1217		       86 5e		      stx	MINION_IND
+    168  1219		       20 62 11 	      jsr	minion_ai
+    169  121c		       20 28 12 	      jsr	delay
+    170  121f		       20 36 12 	      jsr	collisioncheck
+    171  1222
+    172  1222		       a9 40		      lda	#64	; reset the key pressed
+    173  1224		       8d 98 1c 	      sta	key_pressed
+    174  1227
+    175  1227		       60		      rts
+    176  1228
+    177  1228
+    178  1228				   delay		; (p 171 a0-a02 jiffy clock) p204 - 205 settim
+    179  1228		       a9 f9		      LDA	#$f9	; 4F1A01, the max value the clock can be at, goes back to 0 after
+    180  122a		       a2 19		      LDX	#$19
+    181  122c		       a0 4f		      LDY	#$4f
+    182  122e		       20 67 f7 	      JSR	$f767
+    183  1231				   dosum
+    184  1231		       a5 a0		      LDA	$A0
+    185  1233		       d0 fc		      BNE	dosum
+    186  1235		       60		      rts
+    187  1236
+    188  1236
+    189  1236				   collisioncheck
+    190  1236
+    191  1236		       a6 58		      ldx	PLAYER_POS
+    192  1238		       e0 b8		      cpx	#$b8
+    193  123a		       f0 09		      beq	predec_player_health
+    194  123c
+    195  123c		       a6 58		      ldx	PLAYER_POS
+    196  123e		       e0 cd		      cpx	#$cd
+    197  1240		       f0 08		      beq	predec_player_health2
+    198  1242
+    199  1242		       4c 5e 12 	      jmp	next3
+    200  1245
+    201  1245
+    202  1245				   predec_player_health
+    203  1245		       a9 12		      lda	#18	; reset the key pressed
+    204  1247		       4c 4c 12 	      jmp	next2
+    205  124a
+    206  124a				   predec_player_health2
+    207  124a		       a9 11		      lda	#17	; reset the key pressed
+    208  124c				   next2
+    209  124c		       8d 98 1c 	      sta	key_pressed
+    210  124f		       20 94 12 	      jsr	moveplayer
+    211  1252
+    212  1252
+    213  1252				   decr_player_health
+    214  1252
+    215  1252		       20 5f 12 	      jsr	update_player_health
+    216  1255		       a4 57		      ldy	PLAYER_HEALTH
+    217  1257		       c0 00		      cpy	#$00
+    218  1259		       d0 03		      bne	next3
+    219  125b		       20 6a 12 	      jsr	gameover
+    220  125e
+    221  125e				   next3
+    222  125e		       60		      rts
+    223  125f
+    224  125f
+    225  125f				   update_player_health
+    226  125f		       a6 57		      ldx	PLAYER_HEALTH
+    227  1261		       ca		      dex
+    228  1262		       a9 00		      lda	#$00	; blank
+    229  1264		       9d e4 1f 	      sta	$1fe4 ,x
+    230  1267		       86 57		      stx	PLAYER_HEALTH
+    231  1269		       60		      rts
+    232  126a
+    233  126a
+    234  126a				   gameover
+    235  126a		       20 5f e5 	      jsr	$e55f	; clear screen
+    236  126d		       a9 19		      lda	#$19	; load new background colour
+    237  126f		       8d 0f 90 	      sta	SCRCOLOR	; change background and border colours
+    238  1272
+    239  1272		       a9 08		      lda	#$8	; load new background colour
+    240  1274		       8d 0f 90 	      sta	SCRCOLOR	; change background and border colours
+    241  1277
+    242  1277		       4c 6a 12 	      jmp	gameover
+    243  127a
+    244  127a		       60		      rts
+    245  127b
+    246  127b
+    247  127b							;----------------------------graphics---------------------------
+    248  127b				   refresh
+    249  127b
+    250  127b		       a9 00		      lda	#$00
+    251  127d		       a2 ff		      ldx	#$ff
+    252  127f
+    253  127f				   refreshloop1
+    254  127f
+    255  127f		       9d 00 1e 	      sta	$1e00 ,x
+    256  1282		       ca		      dex
+    257  1283		       d0 fa		      bne	refreshloop1
+    258  1285		       9d 00 1e 	      sta	$1e00 ,x
+    259  1288
+    260  1288		       a2 f9		      ldx	#$f9
+    261  128a
+    262  128a				   refreshloop2
+    263  128a		       9d 00 1f 	      sta	$1f00 ,x
+    264  128d		       ca		      dex
+    265  128e		       d0 fa		      bne	refreshloop2
+    266  1290		       9d 00 1f 	      sta	$1f00 ,x
+    267  1293
+    268  1293		       60		      rts
+    269  1294
+    270  1294				   moveplayer
+    271  1294
+    272  1294		       a6 58		      ldx	PLAYER_POS
+    273  1296		       ad 98 1c 	      lda	key_pressed
+    274  1299
+    275  1299		       c9 12		      cmp	#18
+    276  129b		       f0 07		      beq	increment
+    277  129d
+    278  129d		       c9 11		      cmp	#17
+    279  129f		       f0 07		      beq	decrement
+    280  12a1
+    281  12a1		       4c a9 12 	      jmp	next
+    282  12a4
+    283  12a4				   increment
+    284  12a4		       e8		      inx		; increment x by 1 to represent location as current location has moved 1
+    285  12a5		       4c a9 12 	      jmp	next
+    286  12a8				   decrement
+    287  12a8		       ca		      dex
+    288  12a9				   next
+    289  12a9
+    290  12a9		       86 58		      stx	PLAYER_POS
+    291  12ab
+    292  12ab		       a9 03		      lda	#$03	; current starfighter character
+    293  12ad		       a6 58		      ldx	PLAYER_POS
+    294  12af		       9d 00 1f 	      sta	$1f00 ,x	; store it at the current location
+    295  12b2
+    296  12b2		       a9 06		      lda	#$06	; color code
+    297  12b4		       9d 00 97 	      sta	$9700 ,x
+    298  12b7
+    299  12b7				   end
+    300  12b7		       60		      rts
+    301  12b8
+    302  12b8
+------- FILE charset.asm LEVEL 2 PASS 2
+      0  12b8					      include	"charset.asm"
+      1  1c00					      org	$1c00
+      2  1c00
+      3  1c00				   characters
+      4  1c00
+      5  1c00		       00 00 00 00*	      hex	00 00 00 00 00 00 00 00	; 0 Blank character
+      6  1c08		       ff ff ff ff*	      hex	ff ff ff ff ff ff ff ff	; 1 Full character
+      7  1c10		       00 44 ee fe*	      hex	00 44 ee fe fe 7c 38 10	; 2 Heart
+      8  1c18		       08 08 08 1c*	      hex	08 08 08 1c 3e 3e 49 08	; 3 Starfighter
+      9  1c20		       00 00 00 00*	      hex	00 00 00 00 00 00 00 00	; 4 Barrel roll left
+     10  1c28		       00 00 00 00*	      hex	00 00 00 00 00 00 00 00	; 5 Barrel roll right
+     11  1c30		       00 18 3c ff*	      hex	00 18 3c ff 3c 18 18 24	; 6 Explosion
+     12  1c38		       3f 3f 0f 03*	      hex	3f 3f 0f 03 01 01 01 01	; 7 Boss Top 1
+     13  1c40		       3c fe ff ff*	      hex	3c fe ff ff 7f 3f 3f 3b	; 8 Boss Top 2
+     14  1c48		       3c 7f ff ff*	      hex	3c 7f ff ff fe fc fc dc	; 9 Boss Top 3
+     15  1c50		       fc fc f0 c0*	      hex	fc fc f0 c0 80 80 80 80	; 10 Boss Top 4
+     16  1c58		       01 00 00 00*	      hex	01 00 00 00 00 00 00 00	; 11 Boss Bottom 1
+     17  1c60		       3b 1a 1a 1a*	      hex	3b 1a 1a 1a 0a 0a 0a 02	; 12 Boss Bottom 2
+     18  1c68		       dc 58 58 58*	      hex	dc 58 58 58 50 50 50 40	; 13 Boss Bottom 3
+     19  1c70		       80 00 00 00*	      hex	80 00 00 00 00 00 00 00	; 14 Boss Bottom 4
+     20  1c78		       24 24 ff ff*	      hex	24 24 ff ff 7e 24 24 00	; 15 Laser Minion
+     21  1c80		       24 24 7e ff*	      hex	24 24 7e ff 7e 3c 24 24	; 16 Rocket Minion
+     22  1c88		       01 01 01 01*	      hex	01 01 01 01 01 01 01 01	; 17 Laser
+     23  1c90		       a0 a0 a0 a0*	      hex	a0 a0 a0 a0 a0 a0 a0 a0	; 18 Rocket
+------- FILE game.asm
+    304  1c98
+    305  1c98		       40	   key_pressed dc.b	#64	; set to default 64 for no key pressed
+    306  1c99
+    307  1c99				   titlescreen
+    308  1c99		       0d		      dc.b	$0d
+    309  1c9a		       53 20 54 20*	      dc.b	"S T A R F O X  1 9 8 0", $0d, $0d, $0d
+    310  1cb3		       20 20 20 20*	      dc.b	"	JACK XIE", $0d
+    311  1cc2		       20 20 20 20*	      dc.b	"     MICHAEL QIU", $0d
+    312  1cd3		       20 20 20 20*	      dc.b	"	ALAN FUNG", $0d, $0d, $0d
+    313  1ce5		       0d 0d 0d 0d*	      dc.b	$0d, $0d, $0d, $0d, $0d, $0d
+    314  1ceb		       20 20 20 50*	      dc.b	"   PRESS ANY BUTTON", $0d
+    315  1cff
+    316  1cff
+    317  1cff				   main_notes		; Music notes in hex in order of last note to first note
+    318  1cff		       00 93 a3 93*	      dc.b	#$00, #$93, #$a3, #$93, #$af, #$93, #$b7, #$93, #$9f, #$91, #$93, #$a3, #$93, #$af, #$93, #$b7, #$93, #$a3, #$9f, #$93, #$b7, #$93, #$97, #$93, #$00, #$93, #$a3, #$93, #$00, #$93, #$af, #$93, #$00, #$93, #$b7, #$93
+    319  1d23
+    320  1d23				   main_music_registers 		; this must correspond with the notes. for example if there are 20 notes then there are 20 values in this thing
+    321  1d23		       00 0c 0c 0c*	      dc.b	#$00, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c
+    322  1d47
+    323  1d47				   gameover_notes		; Game over tune notes (12)
+    324  1d47		       00 00 00 b7*	      dc.b	#$00, #$00, #$00, #$b7, #$b7, #$b7, #$b7, #$bf, #$c3, #$c9, #$cf, #$d1, #$d7, #$db
+    325  1d55
+    326  1d55				   victory_notes		; Victory tune notes (12)
+    327  1d55		       00 cb cb cb*	      dc.b	#$00, #$cb, #$cb, #$cb, #$c9, #$bb, #$c3, #$b4, #$00, #$b4, #$b7, #$a8, #$93, #$83
+    328  1d63
+    329  1d63				   tune_registers
+    330  1d63		       00 0c 0c 0c*	      dc.b	#$00, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c, #$0c
+    331  1d71
+    332  1d71				   laser_sound
+    333  1d71		       00 09 09 21	      dc.b	#$00, #$109, #$109, #$121
+    334  1d75
+    335  1d75				   minion_status
+    336  1d75		       00 00 00 00	      dc.b	#$00, #$00, #$00, #$00
+    337  1d79				   minion_pos
+    338  1d79		       6f 81 87 89	      dc.b	#$6f, #$81, #$87, #$89
+    339  1d7d

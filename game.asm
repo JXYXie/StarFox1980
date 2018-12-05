@@ -8,9 +8,10 @@ BOSS_POS		equ $59
 BOSS_HEALTH		equ $5a
 SCORE			equ $5b
 HISCORE			equ $5c
-ENEMIES			equ #6
-ENEMY_TYPE		equ $033c
-ENEMY_POS		equ $033c + (ENEMIES + 1)
+MINIONS			equ $5d
+MINION_IND		equ $5e
+LEVEL			equ $5f
+RANDNUM			equ 60
 
 CHROUT			equ $ffd2
 RESET			equ $fd22
@@ -42,12 +43,13 @@ SETTIM			equ $f767
 	
 	include "title.asm"
 	include "boss.asm"
+	include "minions.asm"
 	include "utilities.asm"
 
 	jmp title
 	
 ;---------------------------Initialization-----------------------------------
-init:
+draw_init:
 
 	lda #$08					; load new black background colour
 	sta SCRCOLOR				; change background and border colours
@@ -74,16 +76,24 @@ init:
 	ldy #$06					; color code
 	sty $9796					; 38806
 	
-	jsr spawn_boss
-	
-	lda #$96
-	sta PLAYER_POS				; we are treating this location as ram, it contains the offset to add to the screen
 
-
-;----------------------------Variable initialization---------------------------
+init:
+;------------------------------Game state/variable initialization-----------------------------	
+	lda #$c2
+	sta PLAYER_POS				; We are treating this location as ram, it contains the offset to add to the screen
 	ldy #$03
 	sty PLAYER_HEALTH
 
+	jsr spawn_boss
+	jsr spawn_minions
+
+	ldx #$00
+	stx SCORE
+	stx HISCORE
+	stx LEVEL
+	stx MINION_IND
+	ldx #$04
+	stx MINIONS
 
 ;----------------------------------music loop----------------------------------
 
@@ -148,8 +158,14 @@ gameloop:
 	sta key_pressed
 
 	jsr draw_boss
+	ldx #$00					; Reset minion index counter
+	stx MINION_IND
+	jsr draw_minions
 	jsr moveplayer
 	jsr boss_ai
+	ldx #$00					; Reset minion index counter
+	stx MINION_IND
+	jsr minion_ai
 	jsr delay
 	jsr collisioncheck
 
@@ -173,11 +189,11 @@ dosum:
 collisioncheck:
 
 	ldx PLAYER_POS
-	cpx #$8c
+	cpx #$b8
 	beq predec_player_health
 
 	ldx PLAYER_POS
-	cpx #$a1
+	cpx #$cd
 	beq predec_player_health2
 
 	jmp next3
@@ -316,6 +332,8 @@ tune_registers:
 laser_sound:
 	dc.b	#$00, #$109, #$109, #$121
 
-rand_num:
-	dc.b	0
+minion_status:
+	dc.b	#$00, #$00, #$00, #$00
+minion_pos:
+	dc.b	#$6f, #$81, #$87, #$89
 
