@@ -63,13 +63,13 @@ draw_init:
 	jsr CLRSCRN					; clear screen
 	
 	; Draw hearts
-	lda #$02					; Heart character
-	sta $1fe4
-	sta $97e4
-	sta $1fe5
-	sta $97e5
-	sta $1fe6
-	sta $97e6
+	;lda #$02					; Heart character
+	;sta $1fe4
+	;sta $97e4
+	;sta $1fe5
+	;sta $97e5
+	;sta $1fe6
+	;sta $97e6
 	
 
 init:
@@ -147,6 +147,7 @@ endd2:
 gameloop:
 
 	jsr CLRSCRN
+    jsr DrawHearts
 
 	lda $00c5					; get current pressed key
 	sta key_pressed
@@ -910,6 +911,42 @@ shiftuploop1:
 	;bne shiftuploop1
 endsul1:
 	RTS
+
+
+
+DrawHearts:
+
+    lda PLAYER_HEALTH
+    
+
+    tay 
+    beq endhl
+    
+
+heartloop:
+
+	lda #$02					; Heart character
+
+
+	sta $1fe3,y
+	sta $97e3,y
+
+
+	;sta $1fe4
+	;sta $97e4
+	;sta $1fe5
+	;sta $97e5
+	;sta $1fe6
+	;sta $97e6
+    
+    dey
+
+    bne heartloop
+
+endhl:
+    
+    rts
+
 
 
 
