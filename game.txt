@@ -115,7 +115,7 @@
       3  1055							;-----------------------------------------
       4  1055
       5  1055				   spawn_boss
-      6  1055		       a2 0a		      ldx	#$0a	; Initialize boss health
+      6  1055		       a2 08		      ldx	#$08	; Initialize boss health
       7  1057		       86 5a		      stx	BOSS_HEALTH
       8  1059		       a2 1f		      ldx	#$1f	; Boss position
       9  105b		       86 59		      stx	BOSS_POS	;

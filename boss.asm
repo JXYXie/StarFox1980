@@ -3,7 +3,7 @@
 ;-----------------------------------------
 
 spawn_boss:
-	ldx #$0a					; Initialize boss health
+	ldx #$08					; Initialize boss health
 	stx BOSS_HEALTH
 	ldx #$1f					; Boss position
 	stx BOSS_POS				;
