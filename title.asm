@@ -40,14 +40,6 @@ playMusicstart:
 
 loopMusicStart:
 
-	jsr CLRSCRN					; clear screen
-	lda #$19					; load new background colour
-	sta SCRCOLOR				; change background and border colours
-	
-	lda #$8						; load new background colour
-	sta SCRCOLOR				; change background and border colours
-
-
 
 	lda #$01
 	tya							; transferring y to a in prep to preserve it
@@ -66,6 +58,7 @@ anotherStartLoop:
 
 
 delanStart:
+	jsr delay 
 	pla 						; pull the loop count to make a second from the stack
 	tax 						; loop count now in x
 	bne enddStart

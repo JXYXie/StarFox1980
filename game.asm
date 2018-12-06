@@ -235,12 +235,8 @@ update_player_health:
 
 
 gameover:
-	jsr CLRSCRN					; clear screen
-	lda #$19					; load new background colour
-	sta SCRCOLOR				; change background and border colours
-	
-	lda #$8						; load new background colour
-	sta SCRCOLOR				; change background and border colours
+
+
 
 
 ;--------------------------------------------------------------------- -------------------------------------------------------------------------------------------------------------
@@ -261,15 +257,6 @@ playMusicGainzOver:
 
 loopMusicGainzOver:
 
-	jsr CLRSCRN					; clear screen
-	lda #$19					; load new background colour
-	sta SCRCOLOR				; change background and border colours
-	
-	lda #$8						; load new background colour
-	sta SCRCOLOR				; change background and border colours
-
-
-
 	lda #$01
 	tya							; transferring y to a in prep to preserve it
 	pha
@@ -287,6 +274,7 @@ anotherGainzLoop:
 
 
 delanGainz:
+	jsr delay 
 	pla 						; pull the loop count to make a second from the stack
 	tax 						; loop count now in x
 	bne enddGainz
@@ -310,13 +298,21 @@ enddGainz:
 	jmp loopMusicGainzOver
 
 endd2Gainz:
-	jmp playMusicGainzOver
+	;jmp playMusicGainzOver
 
 
 ;-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+gameover2:
+    
+	jsr CLRSCRN					; clear screen
 
+    lda #$19					; load new background colour
+	sta SCRCOLOR				; change background and border colours
 	
-	jmp gameover	
+	lda #$8						; load new background colour
+	sta SCRCOLOR				; change background and border colours
+	
+	jmp gameover2	
 
 	rts
 
