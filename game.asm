@@ -11,7 +11,8 @@ HISCORE			equ $5c
 MINIONS			equ $5d
 MINION_IND		equ $5e
 LEVEL			equ $5f
-RANDNUM			equ 60
+RANDNUM			equ $60
+SEED			equ $61					; 61 to 62 is 16 bit SEED
 
 CHROUT			equ $ffd2
 RESET			equ $fd22
@@ -23,6 +24,7 @@ NOISE			equ $900d
 VOLUME			equ $900e
 SCRCOLOR		equ $900f
 TXTCOLOR		equ $0286
+CLRSCRN			equ $e55f
 
 SETTIM			equ $f767
 ;----------------------------End Macros----------------------------
@@ -42,6 +44,7 @@ SETTIM			equ $f767
 ;-----------------------------End Stub----------------------------
 	
 	include "title.asm"
+	include "player.asm"
 	include "boss.asm"
 	include "minions.asm"
 	include "utilities.asm"
@@ -57,9 +60,7 @@ draw_init:
 	lda #$ff					; loading the value into $9005 makes the VIC not look into the rom location for characters, instead the vic looks at memory starting at $1c00
 	sta $9005					; the above can be found on pages 85 and 86 of the VIC 20 manual 
 	
-	jsr $e55f					; clear screen
-
-	jsr refresh
+	jsr CLRSCRN					; clear screen
 	
 	; Draw hearts
 	lda #$02					; Heart character
@@ -70,12 +71,6 @@ draw_init:
 	sta $1fe6
 	sta $97e6
 	
-	ldy #$04					; draw starfighter character
-	sty $1f96					; 8086
-	
-	ldy #$06					; color code
-	sty $9796					; 38806
-	
 
 init:
 ;------------------------------Game state/variable initialization-----------------------------	
@@ -84,6 +79,7 @@ init:
 	ldy #$03
 	sty PLAYER_HEALTH
 
+	jsr seedgen
 	jsr spawn_boss
 	jsr spawn_minions
 
@@ -92,7 +88,7 @@ init:
 	stx HISCORE
 	stx LEVEL
 	stx MINION_IND
-	ldx #$04
+	ldx #$0a
 	stx MINIONS
 
 ;----------------------------------music loop----------------------------------
@@ -110,9 +106,7 @@ loopMusic:
 	tya							; transferring y to a in prep to preserve it
 	pha
 	pha							; the first thing in the stack is the duration of the music 
-	;TAX						;X holds amount of time loop must run to make 1 second, assuming 3 jiffies as the loop delay, the A register is now free to hold stuff 
-	
-	
+
 anotherLoop:
 	lda main_notes,y
 	pha							; the music note to play
@@ -152,7 +146,7 @@ endd2:
 
 gameloop:
 
-	jsr refresh
+	jsr CLRSCRN
 
 	lda $00c5					; get current pressed key
 	sta key_pressed
@@ -180,8 +174,8 @@ gameloop:
     jsr writePlayerShot
     jsr drawPlayerShot
 
-    ;jsr writeEnemyShot
-    ;jsr drawEnemyShot
+    jsr writeEnemyShot
+    jsr drawEnemyShot
 
 
 	rts
@@ -244,7 +238,7 @@ update_player_health:
 
 
 gameover:
-	jsr $e55f					; clear screen
+	jsr CLRSCRN					; clear screen
 	lda #$19					; load new background colour
 	sta SCRCOLOR				; change background and border colours
 	
@@ -256,39 +250,16 @@ gameover:
 	rts
 
 
-;----------------------------graphics---------------------------
-refresh:
-
-	lda #$00			   
-	ldx #$ff
-
-refreshloop1:
-
-	sta $1e00 ,x				
-	dex 
-	bne refreshloop1
-	sta $1e00 ,x 
-
-	ldx #$f9
-
-refreshloop2:
-	sta $1f00 ,x				
-	dex 
-	bne refreshloop2
-	sta $1f00 ,x 
-
-	rts
-
 moveplayer:
 
 	ldx PLAYER_POS
 	lda key_pressed
 
 	cmp #18
-	beq increment	
+	beq increment
 	
 	cmp #17
-	beq decrement 
+	beq decrement
 
 	jmp next
 
@@ -298,18 +269,361 @@ increment:
 decrement:
 	dex 
 next:
-
-	stx PLAYER_POS	 
-
-	lda #$03				; current starfighter character
-	ldx PLAYER_POS
-	sta $1f00 ,x			; store it at the current location
-	
-	lda #$06				; color code
-	sta $9700 ,x
+	stx PLAYER_POS
+	jsr draw_player
 
 end:
 	rts
+
+
+
+writeEnemyShot:
+    ; find the first available space that is #$00
+    ;write #$1e to first value, then the players x position but shifted down 1 on the grid
+    ; calls another subroutine to draw the shot
+    ldy #$08    ; this is 2x the number of shots we are allowing to be on screen, the max num is currently 4
+    
+wesLoop:
+    LDA enemyShots,y ;the "first" thing holds 1e, 1f or 00. if it is 00 we want to write to it
+    cmp #$00
+    beq exitwesLoop
+    dey     ; dec y so it points to the "suffix" of 1e or 1f
+    dey     ; dec again so it is pointing to the next prefix of 1e or 1f
+    bne wesLoop
+    jmp endwesLoop  ;if the loop finishes without triggering exit, then no #$00 was found
+
+
+exitwesLoop: ;the y register now contains the offset we need to write to for either 1f or 1e 
+    LDA #$1e
+    STA enemyShots,y
+    dey ;decrement to prepare for storing the suffix to the appropriate area in data
+    TYA ; prep y to be pushed to stack for storage
+    PHA ; the y index is now in the stack
+    
+    lda boss_laser
+
+    ;LDA BOSS_POS ;temp placeholder value, replace with boss position
+    ; minion_pos  with location
+    clc
+    adc #$16
+
+
+    TAX ; X is temporarily holding the player pos value 
+    PLA ; pull the y value into a
+    TAY ;transfer value back to y
+    TXA ;transfer the player pos back into A
+    sta enemyShots ,y ; now the suffix should be properly stored 
+
+endwesLoop:
+    rts 
+
+
+
+;writeenemyshot should be good
+
+
+
+
+drawEnemyShot:
+    ;pull the first thing from the list that is not 00, draw laser to the specified location, then iterate through the location and repeat 
+    ;also need a backstop subroutine to stop the fire from going past the screen in both directions, will likely need 2
+    ;the shot is "incremented up" in this. if it were to hit a backstop then it is reset to 00
+
+    ldy #$08    ; this is 2x the number of shots we are allowing to be on screen, the max num is currently 4  
+    
+desLoop: 
+    LDA enemyShots,y ;the "first" thing holds 1e, 1f or 00. if it is 00 we want to write to it
+    cmp #$00
+    beq enddesLoop
+
+    ;cpy #$02
+    ;bne skip
+    ;jsr spinloop
+
+
+
+    cmp #$1e
+    bne nextdes 
+    ;draw the laser then shift it up one
+    dey ; the gets  the address ready for the suffix value for the laser
+    LDA enemyShots,y 
+    TAX ;transfer a to x to get ready for another aaaa ,x to write the laser to memory
+    lda #$0f ;load the character of the laser
+    sta #$1e00 ,x ; the laser is now stored here, 1f00 + 30,000 = 9430
+
+    ;cpy #$02
+    ;bne skip
+    ;jsr spinloop
+
+
+    TYA 
+    PHA
+    jsr shiftupfordes ;x will contain the value that was shifted 
+    pla
+    tay ;need to retrieve the y value corresponding to the list
+
+    ;cpx #$f2
+    ;bne skip
+    ;jsr spinloop
+
+    jsr shiftupfordes2
+    
+
+
+
+   ; lda #$05 ;load the character of the laser;debug
+    ;sta #$1f00 ,x ; the laser is now stored here, 1f00 + 30,000 = 9430 ;debug
+
+
+    ;cpx #$08
+    ;bne skip
+    ;jsr spinloop
+
+
+
+    TXA ; the offset of x calculated is now in a for a aaaa,y address
+    STA enemyShots ,y
+
+    jmp enddesLoop2
+skip:
+nextdes:
+
+    dey ; the gets  the address ready for the suffix value for the laser
+    LDA enemyShots ,y 
+    TAX ;transfer a to x to get ready for another aaaa ,x to write the laser to memory
+    lda #$0f ;load the character of the laser
+
+    sta #$1f00 ,x ; the laser is now stored here, 1f00 + 30,000 = 9430
+    ;lda #$04 ;color code
+    ;sta 9430 ,x ; x currently contains the offset we want to shift up
+
+    ;cpx #$08
+    ;bne skip
+    ;jsr spinloop
+
+    TYA 
+    PHA
+    jsr shiftupfordes ;x will contain the value that was shifted up 
+
+
+    pla
+    tay ;need to retrieve the y value corresponding to the list
+    jsr shiftupfordes3
+    
+    TXA ; the offset of x calculated is now in a for a aaaa,y address
+    STA enemyShots ,y
+
+
+
+enddesLoop2:
+
+    dey ; the two deys prep for the next cycle 
+    bne desLoop
+    rts
+
+
+enddesLoop:
+
+
+    dey
+    dey ; the two deys prep for the next cycle 
+    bne desLoop
+    rts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+shiftupfordes3: ; the x register contains the value to be compared
+
+    TYA
+    PHA
+
+    ldy #$fc ; need add 22 to shift something 1 char up
+
+shiftupdesloop3:
+    
+    sty temp
+
+    cpx temp
+    beq suldesnext1
+
+    dey
+    cpy #$ce ;maybe take out
+    bne shiftupdesloop3 ; don't want to run the alg when x = 0
+
+    cpx #$ce
+    bne suldesend3
+
+    ldx #$00
+    jmp suldesend1
+    ;the branch should end here
+
+suldesnext1:  ;now the x register contains how much we want to add to 234, x must be at least1
+
+    ;ldy #$00
+
+sndeslooptop1:
+
+    ;iny
+    ;dex 
+    ;bne sndeslooptop1 ;y contains the offset of x after this, move it back to x
+
+    TYA
+    TAX ; value now back in x
+
+suldesend1:
+
+    pla
+    tay
+
+    iny
+
+    LDA #$00
+    STA enemyShots ,y
+
+
+    dey
+    
+    TYA
+    PHA
+
+suldesend3:
+
+    pla
+    tay
+
+    rts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+shiftupfordes:;actually decrements, but shifts stuff up the screen
+
+    ;ldy #$16 ; need add 22 to shift something 1 char up
+
+
+
+shiftupdesloop1:
+    cpx #$ff
+    beq enddessul1
+    txa
+    clc
+    adc #$16
+    tax 
+
+    ;dex
+    ;cpx #$00
+    ;beq enddessul1
+    ;dey
+    ;bne shiftupdesloop1
+enddessul1:
+    RTS
+
+
+shiftupfordes2: ; the x register contains the value to be compared
+
+    TYA
+    PHA
+
+    ldy #$ff ; need add 22 to shift something 1 char up
+
+    cpx #$ea
+    beq endendenddes
+
+
+shiftupdesloop2:
+    
+    sty temp
+
+    cpx temp
+    
+    beq suldesnext
+
+    dey
+    cpy #$ea ;maybe take out
+    bne shiftupdesloop2 ; don't want to run the alg when x = 0
+
+    cpx #$EA
+    bne suldesend2
+
+    ldx #$ea
+    jmp suldesend
+    ;the branch should end here
+
+suldesnext:  ;now the x register contains how much we want to subtract EA from
+
+    ;ldy #$00 
+    txa  
+    sbc #$EA
+
+    
+;sndeslooptop:
+
+    ;iny
+    ;dex 
+    ;bne sndeslooptop ;y contains the offset of x after this, move it back to x
+
+    ;TYA
+    TAX ; value now back in x
+
+suldesend:
+
+    pla
+    tay
+
+    iny
+
+    LDA #$1f
+    STA enemyShots ,y
+
+
+    dey
+    
+    TYA
+    PHA
+
+suldesend2:
+
+    pla
+    tay
+
+    rts
+     
+endendenddes:
+    ldx #$00
+
+    jmp suldesend
+
+
+
+
+
+
+
+
+
 
 
 
@@ -367,7 +681,7 @@ dpsLoop:
     dey ; the gets  the address ready for the suffix value for the laser
     lda playerShots,y 
     tax ;transfer a to x to get ready for another aaaa ,x to write the laser to memory
-    lda #$11 ;load the character of the laser
+    lda #$0f ;load the character of the laser
 
     sta #$1f00,x ; the laser is now stored here, 1f00 + 30,000 = 9430
     ;lda #$04 ;color code
@@ -380,11 +694,6 @@ dpsLoop:
     tay ;need to retrieve the y value corresponding to the list
     jsr shiftupfordps2
     
-    ;cpx #$ea
-    ;bne skip
-    ;jsr spinloop
-
-;skip:
     txa ; the offset of x calculated is now in a for a aaaa,y address
     sta playerShots ,y
 
@@ -398,7 +707,7 @@ nextdps: ; this assumes that the prefix is 1e
     dey ; the gets  the address ready for the suffix value for the laser
     LDA playerShots ,y 
     TAX ;transfer a to x to get ready for another aaaa ,x to write the laser to memory
-    lda #$11 ;load the character of the laser
+    lda #$0f ;load the character of the laser
 
     sta #$1e00 ,x ; the laser is now stored here, 1f00 + 30,000 = 9430
     lda #$04 ;color code
@@ -488,36 +797,6 @@ sulend3:
     tay
 
     rts
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -632,14 +911,6 @@ spinloop:
 
 
 
-
-
-
-
-
-
-
-
 shiftUp: ;actually decrements, but shifts stuff up the screen
 
 ;    ldx #$16 ; need add 22 to shift something 1 char up
@@ -653,7 +924,9 @@ shiftUp: ;actually decrements, but shifts stuff up the screen
 ;    bne shiftuploop
 ;    TYA
     rts
-	include		"charset.asm"
+
+	echo "Bytes remaining in program"
+	echo $1c00-.
  
 key_pressed: dc.b #64  ; set to default 64 for no key pressed
 
@@ -668,8 +941,6 @@ titlescreen:
 
 temp:
     dc.b:   #$00
-
-
 
 ;---------------------------------------------------position tracking--------------------------------------------
 
@@ -700,7 +971,16 @@ laser_sound:
 	dc.b	#$00, #$109, #$109, #$121
 
 minion_status:
-	dc.b	#$00, #$00, #$00, #$00
+	dc.b	#$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00
+
 minion_pos:
-	dc.b	#$6f, #$81, #$87, #$89
+	dc.b	#$71, #$81, #$87, #$89, #$9d, #$a2, #$b2, #$b8, #$c9, #$ca
+
+boss_laser:
+    dc.b    #$00
+
+	echo "Bytes remaining in character set"
+	echo $1e00-.
+
+	include		"charset.asm"
 

@@ -7,6 +7,7 @@ spawn_boss:
 	stx BOSS_HEALTH
 	ldx #$1f					; Boss position
 	stx BOSS_POS				;
+	
 	rts
 
 draw_boss:
@@ -89,6 +90,9 @@ boss_ai:
 	bcs boss_move_left			; If player to the left of boss move left
 
 boss_ai_shoot:
+	lda BOSS_POS
+	sta boss_laser
+	jsr writeEnemyShot
 	rts
 
 

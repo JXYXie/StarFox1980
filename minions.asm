@@ -14,7 +14,7 @@ spawn_laser_minion:
 	sta minion_status ,x		; Save the status
 	inx							; Increment the index
 	stx MINION_IND				; Save the new index
-	cpx #$04					; If not at the end of the index
+	cpx #$0a					; If not at the end of the index
 	bne spawn_minions			; Keep spawning more minions
 	rts
 
@@ -24,7 +24,7 @@ spawn_rocket_minion:
 	sta minion_status ,x		; Save the status
 	inx							; Increment the index
 	stx MINION_IND				; Save the new index
-	cpx #$04					; If not at the end of the index
+	cpx #$0a					; If not at the end of the index
 	bne spawn_minions
 	rts
 
@@ -40,7 +40,7 @@ draw_minions:
 draw_laser_minion:
 	ldx MINION_IND				; Get the current minion index
 	ldy minion_pos ,x			; Get the position of the minion
-	lda #$0f					; Laser minion char
+	lda #$11					; Laser minion char
 	sta $1e00 ,y				; At the location
 	lda #$02
 	sta $9600 ,y				; Color location
@@ -49,7 +49,7 @@ draw_laser_minion:
 draw_rocket_minion:
 	ldx MINION_IND				; Get the current minion index
 	ldy minion_pos ,x			; Get the position of the minion
-	lda #$10					; Rocket minion char
+	lda #$12					; Rocket minion char
 	sta $1e00 ,y				; At the location
 	lda #$05
 	sta $9600 ,y				; Color location
@@ -57,9 +57,16 @@ draw_rocket_minion:
 end_draw_minion:
 	inx							; Next minion
 	stx MINION_IND				; store the new minion
-	cpx #$04					; Are we done drawing minions?
+	cpx #$0a					; Are we done drawing minions?
 	bne draw_minions			; If not keep drawing
 
+	rts
+
+minion_ai:
+	jsr randgen					; Generate random number
+	lsr RANDNUM					; shift bit 0
+	bcc minion_move_right		; If even
+	bcs minion_move_left		; If odd
 	rts
 
 minion_move_left:
@@ -76,6 +83,21 @@ minion_move_left:
 	cmp #$c6
 	beq minion_move_end
 	cmp #$dc
+	beq minion_move_end
+
+	ldx MINION_IND
+	ldy minion_pos ,x
+	dey
+	lda $1e00 ,y
+	cmp #$11
+	beq minion_move_end
+	cmp #$12
+	beq minion_move_end
+	dey
+	lda $1e00 ,y
+	cmp #$11
+	beq minion_move_end
+	cmp #$12
 	beq minion_move_end
 
 	dec minion_pos ,x
@@ -97,20 +119,35 @@ minion_move_right:
 	cmp #$f1
 	beq minion_move_end
 
-	dec minion_pos ,x
+	ldx MINION_IND
+	ldy minion_pos ,x
+	iny
+	lda $1e00 ,y
+	cmp #$11
+	beq minion_move_end
+	cmp #$12
+	beq minion_move_end
+	iny
+	lda $1e00 ,y
+	cmp #$11
+	beq minion_move_end
+	cmp #$12
+	beq minion_move_end
+
+	inc minion_pos ,x
 
 minion_move_end:
 	inx
 	stx MINION_IND
 
 	cpx MINIONS
-	bne minion_ai
+	beq minion_ai_end
+	jsr minion_ai
 
+minion_ai_end:
 	rts
 
-minion_ai:
-	jmp minion_move_left
+minion_shoot:
 
 	rts
-
 
