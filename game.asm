@@ -118,7 +118,7 @@ anotherLoop:
 	sta $9000,x 				; the music note that needs to be played is now active in the indicated register 
 delan:
 	jsr gameloop
-	jsr delay 
+	jsr delay
 	pla 						; pull the loop count to make a second from the stack
 	tax 						; loop count now in x
 	bne endd
@@ -160,33 +160,32 @@ no_shoot:
 	sta key_pressed
 
 	jsr drawPlayerShot
-
 	jsr drawEnemyShot	
 
 	jsr player_collision
+	jsr minion_collision
+	jsr boss_collision
 
+	ldx BOSS_HEALTH
+	cpx #$00					; Is the boss dead?
+	beq no_boss					; If so dont draw it
 	jsr draw_boss
+	jsr boss_ai
+no_boss:
 	ldx #$00					; Reset minion index counter
 	stx MINION_IND
-	jsr draw_minions
+	jsr draw_minions			; Draw minions
 	jsr moveplayer
-	jsr boss_ai
 	ldx #$00					; Reset minion index counter
 	stx MINION_IND
 	jsr minion_ai
 	ldx #$00
 	stx MINION_IND
-	jsr minion_collision
 	jsr delay
 	jsr collisioncheck
 
 	lda #64						; reset the key pressed
 	sta key_pressed
-
-
-	lda #$05 ;load the character of the laser
-	ldx #$00
-	sta #$1f00,x ; the laser is now stored here, 1f00 + 30,000 = 9430
 
 	rts
 
@@ -248,7 +247,6 @@ update_player_health:
 
 
 gameover:
-
 ;--------------------------------------------------------------------- -------------------------------------------------------------------------------------------------------------
 
 ;music goes here
@@ -345,8 +343,6 @@ next:
 
 end:
 	rts
-
-
 
 writeEnemyShot:
 	; find the first available space that is #$00
@@ -704,7 +700,7 @@ dpsLoop:
 	dey ; the gets  the address ready for the suffix value for the laser
 	lda playerShots,y 
 	tax ;transfer a to x to get ready for another aaaa ,x to write the laser to memory
-	lda #$0f ;load the character of the laser
+	lda #$10 ;load the character of the laser
 
 	sta #$1f00,x ; the laser is now stored here, 1f00 + 30,000 = 9430
 	;lda #$04 ;color code
@@ -730,7 +726,7 @@ nextdps: ; this assumes that the prefix is 1e
 	dey ; the gets  the address ready for the suffix value for the laser
 	LDA playerShots ,y 
 	TAX ;transfer a to x to get ready for another aaaa ,x to write the laser to memory
-	lda #$0f ;load the character of the laser
+	lda #$10 ;load the character of the laser
 
 	sta #$1e00 ,x ; the laser is now stored here, 1f00 + 30,000 = 9430
 	lda #$04 ;color code
@@ -934,13 +930,6 @@ heartloop:
 	sta $1fe3,y
 	sta $97e3,y
 
-
-	;sta $1fe4
-	;sta $97e4
-	;sta $1fe5
-	;sta $97e5
-	;sta $1fe6
-	;sta $97e6
     
     dey
 
@@ -949,9 +938,6 @@ heartloop:
 endhl:
     
     rts
-
-
-
 
 
 spinloop:
@@ -967,7 +953,6 @@ spinloop:
 	bne spinloop
 
 	rts
-
 
 
 shiftUp: ;actually decrements, but shifts stuff up the screen

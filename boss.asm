@@ -102,3 +102,77 @@ boss_ai_shoot:
 	rts
 
 
+boss_collision:
+	ldx BOSS_POS
+	lda $1e00 ,x
+	cmp #$10
+	bne boss_collision_end
+
+	jsr decr_boss_health
+
+boss_collision_end
+	rts
+
+decr_boss_health:
+	ldx BOSS_HEALTH
+	dex
+	stx BOSS_HEALTH
+	cpx #$00
+	beq boss_death
+	rts
+
+boss_death:
+	jsr victoryTheme
+
+	ldx BOSS_POS
+	lda #$17					; Boss top left character
+	sta $1e00 ,x				; Store it at the right locatin
+	lda #$07					; Colour
+	sta $9600 ,x
+	
+	inx
+	lda #$18					; Boss top mid-left character
+	sta $1e00 ,x				; Store it at the right locatin
+	lda #$07					; Colour
+	sta $9600 ,x
+	
+	inx
+	lda #$19					; Boss top mid-right character
+	sta $1e00 ,x				; Store it at the right locatin
+	lda #$07					; Colour
+	sta $9600 ,x
+	
+	inx
+	lda #$1a					; Boss top right character
+	sta $1e00 ,x				; Store it at the right locatin
+	lda #$07					; Colour
+	sta $9600 ,x
+	
+	lda BOSS_POS				; Get boss position
+	clc
+	adc #$16					; Get the bottom row
+	tax							; Transfer it to x register
+	lda #$1b					; Boss bottom left character
+	sta $1e00 ,x				; Store it at the right locatin
+	lda #$07					; Colour
+	sta $9600 ,x
+	
+	inx
+	lda #$1c					; Boss bottom mid-left character
+	sta $1e00 ,x				; Store it at the right locatin
+	lda #$17					; Colour
+	sta $9600 ,x
+	
+	inx
+	lda #$1d					; Boss bottom mid-right character
+	sta $1e00 ,x				; Store it at the right locatin
+	lda #$07					; Colour
+	sta $9600 ,x
+	
+	inx
+	lda #$1e					; Boss bottom right character
+	sta $1e00 ,x				; Store it at the right locatin
+	lda #$07					; Colour
+	sta $9600 ,x
+
+	jmp boss_death

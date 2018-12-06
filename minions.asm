@@ -158,7 +158,6 @@ minion_ai_end:
 
 
 check_laser:
-	lda MINION_IND
 	ldy #$10
 minion_loop:
 	lda playerShots ,y ;the "first" thing holds 1e, 1f or 00. if it is 00 we want to write to it
