@@ -85,7 +85,7 @@ boss_ai:
 	lda BOSS_POS				; Get the boss position
 	adc #$a2					; Add an offset
 	cmp PLAYER_POS				; Compare it with player position
-	beq boss_ai_shoot			; If the boss is where the player is shoot
+	beq boss_ai_shoot			; If the boss is where the player boss ai determine when to shoot
 	bcc boss_move_right			; If player is to the right of boss move right
 	bcs boss_move_left			; If player to the left of boss move left
 

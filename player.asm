@@ -19,3 +19,12 @@ draw_player:
 	rts
 
 player_lose_health:
+
+
+	rts
+
+player_shoot:
+	
+	jsr writePlayerShot
+
+	rts
