@@ -18,13 +18,13 @@ draw_player:
 	sta $9700 ,x
 	rts
 
-player_lose_health:
+player_collision:
+	ldx PLAYER_POS
+	lda $1f00 ,x
+	cmp #$0f
+	bne player_collision_end
 
+	jsr decr_player_health
 
-	rts
-
-player_shoot:
-	
-	jsr writePlayerShot
-
+player_collision_end:
 	rts

@@ -90,8 +90,14 @@ boss_ai:
 	bcs boss_move_left			; If player to the left of boss move left
 
 boss_ai_shoot:
-	lda BOSS_POS
-	sta boss_laser
+	lda BOSS_POS				; Get the boss location
+	sta laser_pos				; Shoot the left laser at this location
+	jsr writeEnemyShot
+	tax
+	inx
+	inx
+	txa							; Get the right laser location
+	sta laser_pos
 	jsr writeEnemyShot
 	rts
 

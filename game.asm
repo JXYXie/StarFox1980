@@ -13,6 +13,8 @@ MINION_IND		equ $5e
 LEVEL			equ $5f
 RANDNUM			equ $60
 SEED			equ $61					; 61 to 62 is 16 bit SEED
+TMP				equ $62
+TMP2			equ $63
 
 CHROUT			equ $ffd2
 RESET			equ $fd22
@@ -102,7 +104,7 @@ playMusic:
   
 loopMusic:
 
-	lda #$01
+	lda #$02					; Duration of each note
 	tya							; transferring y to a in prep to preserve it
 	pha
 	pha							; the first thing in the stack is the duration of the music 
@@ -150,7 +152,18 @@ gameloop:
     jsr DrawHearts
 
 	lda $00c5					; get current pressed key
+	cmp #32
+	bne no_shoot
+	jsr writePlayerShot
+
+no_shoot:
 	sta key_pressed
+
+	jsr drawPlayerShot
+
+	jsr drawEnemyShot	
+
+	jsr player_collision
 
 	jsr draw_boss
 	ldx #$00					; Reset minion index counter
@@ -161,6 +174,9 @@ gameloop:
 	ldx #$00					; Reset minion index counter
 	stx MINION_IND
 	jsr minion_ai
+	ldx #$00
+	stx MINION_IND
+	jsr minion_collision
 	jsr delay
 	jsr collisioncheck
 
@@ -172,15 +188,11 @@ gameloop:
 	ldx #$00
 	sta #$1f00,x ; the laser is now stored here, 1f00 + 30,000 = 9430
 
-	jsr drawPlayerShot
-
-	jsr drawEnemyShot
-
 	rts
 
 
 delay:							; (p 171 a0-a02 jiffy clock) p204 - 205 settim
-	LDA #$f9					; 4F1A01, the max value the clock can be at, goes back to 0 after 
+	LDA #$fc					; 4F1A01, the max value the clock can be at, goes back to 0 after 
 	LDX #$19
 	LDY #$4f
 	JSR $f767
@@ -237,9 +249,6 @@ update_player_health:
 
 gameover:
 
-
-
-
 ;--------------------------------------------------------------------- -------------------------------------------------------------------------------------------------------------
 
 ;music goes here
@@ -249,26 +258,20 @@ gameover:
 
 playMusicGainzOver:
 
-
-
-
-
 	ldy #$0d 					;start of loop counter, music has 12(or 13 notes, dunno ask jack) notes notes in it (c in hex)
 
 
 loopMusicGainzOver:
 
-	lda #$01
+	lda #$04
 	tya							; transferring y to a in prep to preserve it
 	pha
 	pha							; the first thing in the stack is the duration of the music 
 
-
-
 anotherGainzLoop:
 	lda gameover_notes,y
 	pha							; the music note to play
-	lda tune_registers,y 	; the register in now in A
+	lda tune_registers,y 		; the register in now in A
 	tax 						; the music register is now in x
 	pla 						; the music note to play is now in a
 	sta $9000,x 				; the music note that needs to be played is now active in the indicated register 
@@ -349,7 +352,7 @@ writeEnemyShot:
 	; find the first available space that is #$00
 	;write #$1e to first value, then the players x position but shifted down 1 on the grid
 	; calls another subroutine to draw the shot
-	ldy #$08    ; this is 2x the number of shots we are allowing to be on screen, the max num is currently 4
+	ldy #$10    ; this is 2x the number of shots we are allowing to be on screen, the max num is currently 4
 	
 wesLoop:
 	LDA enemyShots,y ;the "first" thing holds 1e, 1f or 00. if it is 00 we want to write to it
@@ -368,7 +371,7 @@ exitwesLoop: ;the y register now contains the offset we need to write to for eit
 	TYA ; prep y to be pushed to stack for storage
 	PHA ; the y index is now in the stack
 	
-	lda boss_laser
+	lda laser_pos
 
 	;LDA BOSS_POS ;temp placeholder value, replace with boss position
 	; minion_pos  with location
@@ -391,7 +394,7 @@ drawEnemyShot:
 	;also need a backstop subroutine to stop the fire from going past the screen in both directions, will likely need 2
 	;the shot is "incremented up" in this. if it were to hit a backstop then it is reset to 00
 
-	ldy #$08    ; this is 2x the number of shots we are allowing to be on screen, the max num is currently 4  
+	ldy #$10    ; this is 2x the number of shots we are allowing to be on screen, the max num is currently 4  
 	
 desLoop: 
 	LDA enemyShots,y ;the "first" thing holds 1e, 1f or 00. if it is 00 we want to write to it
@@ -654,7 +657,7 @@ writePlayerShot:
 	;write #$1f to first value, then the players x position but shifted up 1 on the grid
 	; calls another subroutine to draw the shot
 
-	ldy #$08    ; this is 2x the number of shots we are allowing to be on screen, the max num is currently 4
+	ldy #$10    ; this is 2x the number of shots we are allowing to be on screen, the max num is currently 4
 	
 wpsLoop:
 	LDA playerShots,y ;the "first" thing holds 1e, 1f or 00. if it is 00 we want to write to it
@@ -688,7 +691,7 @@ drawPlayerShot:
 	;also need a backstop subroutine to stop the fire from going past the screen in both directions, will likely need 2
 	;the shot is "incremented up" in this. if it were to hit a backstop then it is reset to 00
 
-	ldy #$08    ; this is 2x the number of shots we are allowing to be on screen, the max num is currently 4  
+	ldy #$10    ; this is 2x the number of shots we are allowing to be on screen, the max num is currently 4  
 	
 dpsLoop: 
 	LDA playerShots,y ;the "first" thing holds 1e, 1f or 00. if it is 00 we want to write to it
@@ -1003,10 +1006,10 @@ temp:
 ;limit of 4 "shots" for now
 
 playerShots: 
-	dc.b    #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00
+	dc.b    #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00
 
 enemyShots:
-	dc.b    #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00
+	dc.b    #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00
 
 main_notes:				; Music notes in hex in order of last note to first note
 	dc.b	#$00, #$93, #$a3, #$93, #$af, #$93, #$b7, #$93, #$9f, #$91, #$93, #$a3, #$93, #$af, #$93, #$b7, #$93, #$a3, #$9f, #$93, #$b7, #$93, #$97, #$93, #$00, #$93, #$a3, #$93, #$00, #$93, #$af, #$93, #$00, #$93, #$b7, #$93
@@ -1027,12 +1030,12 @@ laser_sound:
 	dc.b	#$00, #$109, #$109, #$121
 
 minion_status:
-	dc.b	#$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00
+	dc.b	#$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00, #$00
 
 minion_pos:
-	dc.b	#$71, #$81, #$87, #$89, #$9d, #$a2, #$b2, #$b8, #$c9, #$ca
+	dc.b	#$74, #$81, #$86, #$8c, #$9a, #$9d, #$9e, #$a3, #$b1, #$b4, #$b8, #$ba, #$ca, #$cd, #$cf
 
-boss_laser:
+laser_pos:
 	dc.b    #$00
 
 	echo "Bytes remaining in character set"

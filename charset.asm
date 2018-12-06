@@ -15,15 +15,15 @@ characters:
     hex 3b 1a 1a 1a 0a 0a 0a 02     ; C Boss Bottom 2
     hex dc 58 58 58 50 50 50 40     ; D Boss Bottom 3
     hex 80 00 00 00 00 00 00 00     ; E Boss Bottom 4
-    hex 01 01 01 01 01 01 01 01     ; F Laser
-    hex a0 a0 a0 a0 a0 a0 a0 a0     ; 10 Rocket
+    hex 01 01 01 01 01 01 01 01     ; F Player Laser
+    hex 01 01 01 01 01 01 01 01     ; 10 Enemy Laser
     hex 24 24 ff ff 7e 24 24 00     ; 11 Minion 1
     hex 24 24 7e ff 7e 3c 24 24     ; 12 Minion 2
-    hex 24 24 ff ff 7e 24 24 00     ; 13 Minion 1 Death
-    hex 24 24 7e ff 7e 3c 24 24     ; 14 Minion 2 Death
-    hex 24 24 ff ff 7e 24 24 00     ; 15 Player Death
+    hex 18 3c 7e ff ff 7e 3c 18     ; 13 Minion 1 Death
+    hex 00 3c 7e 7e 7e 7e 3c 00     ; 14 Minion 2 Death
+    hex 18 3c 7e ff ff 7e 3c 18     ; 15 Player Death
     hex 24 24 7e ff 7e 3c 24 24     ; 16 Player Death 2
-    hex 24 24 ff ff 7e 24 24 00     ; 17 Boss Top 1 Death
+    hex 00 3c 7e 7e 7e 7e 3c 00     ; 17 Boss Top 1 Death
     hex 24 24 7e ff 7e 3c 24 24     ; 18 Boss Top 2 Death
     hex 24 24 ff ff 7e 24 24 00     ; 19 Boss Top 3 Death
     hex 24 24 7e ff 7e 3c 24 24     ; 1A Boss Top 4 Death

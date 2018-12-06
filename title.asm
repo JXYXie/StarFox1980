@@ -18,10 +18,6 @@ titleloop:
     cpy #101                ; 101 characters in the title screen
     bne titleloop
     
-
-
-
-
 ;--------------------------------------------------------------------- -------------------------------------------------------------------------------------------------------------
 
 ;music goes here
@@ -32,20 +28,15 @@ titleloop:
 playMusicstart:
 
 
-
-
-
 	ldy #$0d 					;start of loop counter, music has 12(or 13 notes, dunno ask jack) notes notes in it (c in hex)
-
 
 loopMusicStart:
 
 
-	lda #$01
+	lda #$04
 	tya							; transferring y to a in prep to preserve it
 	pha
 	pha							; the first thing in the stack is the duration of the music 
-
 
 
 anotherStartLoop:
@@ -86,15 +77,6 @@ endd2Start:
 
 
 ;-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
 
 
 titlewait:

@@ -28,7 +28,6 @@ spawn_rocket_minion:
 	bne spawn_minions
 	rts
 
-
 draw_minions:
 	ldx MINION_IND				; Get the current minion index
 	ldy minion_status ,x		; Get the minion status
@@ -63,10 +62,18 @@ end_draw_minion:
 	rts
 
 minion_ai:
+
+
+	ldx MINION_IND
+	lda minion_pos ,x
+	sta laser_pos
+	jsr writeEnemyShot
+
 	jsr randgen					; Generate random number
 	lsr RANDNUM					; shift bit 0
 	bcc minion_move_right		; If even
 	bcs minion_move_left		; If odd
+
 	rts
 
 minion_move_left:
@@ -119,6 +126,7 @@ minion_move_right:
 	cmp #$f1
 	beq minion_move_end
 
+	; Compare tiles near minion
 	ldx MINION_IND
 	ldy minion_pos ,x
 	iny
@@ -137,6 +145,7 @@ minion_move_right:
 	inc minion_pos ,x
 
 minion_move_end:
+
 	inx
 	stx MINION_IND
 
@@ -147,7 +156,69 @@ minion_move_end:
 minion_ai_end:
 	rts
 
-minion_shoot:
+
+check_laser:
+	lda MINION_IND
+	ldy #$10
+minion_loop:
+	lda playerShots ,y ;the "first" thing holds 1e, 1f or 00. if it is 00 we want to write to it
+	cmp #$1e
+	bne minion_loop_next
+	dey
+	lda playerShots ,y
+	ldx minion_pos, MINION_IND
+	stx TMP2
+	cmp TMP2
+	bne minion_loop_next1
+	lda MINION_IND
+	jsr kill_minion
+	
+	rts
+
+minion_loop_next1:
+	dey
+	bne minion_loop
+	rts
+
+
+minion_loop_next:
+	dey
+	dey
+	bne minion_loop
+
+	rts
+
+
+minion_collision:
+	ldx MINION_IND
+	lda minion_status ,x
+	cmp #$00						; Check if the minion is already dead
+	beq minion_collision_next
+	jsr check_laser
+	ldx MINION_IND
+
+minion_collision_next:
+	inx								; Increment minion index
+	stx MINION_IND					; Save it
+
+	cpx MINIONS						; At the end of minions?
+	beq minion_collision_end
+	bne minion_collision
+
+minion_collision_end:
+	rts
+
+kill_minion:
+	tax
+	ldy minion_pos ,x				; Get the position
+	lda #$13						; Death animation
+	sta $1e00 ,y
+	lda #$02
+	sta $9600 ,y					; Color location
+
+	ldx MINION_IND
+	lda #$00						; death status
+	sta minion_status ,x			; Update minion status
 
 	rts
 
