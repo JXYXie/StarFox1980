@@ -156,45 +156,20 @@ minion_move_end:
 minion_ai_end:
 	rts
 
-
-check_laser:
-	ldy #$10
-minion_loop:
-	lda playerShots ,y ;the "first" thing holds 1e, 1f or 00. if it is 00 we want to write to it
-	cmp #$1e
-	bne minion_loop_next
-	dey
-	lda playerShots ,y
-	ldx minion_pos, MINION_IND
-	stx TMP2
-	cmp TMP2
-	bne minion_loop_next1
-	lda MINION_IND
-	jsr kill_minion
-	
-	rts
-
-minion_loop_next1:
-	dey
-	bne minion_loop
-	rts
-
-
-minion_loop_next:
-	dey
-	dey
-	bne minion_loop
-
-	rts
-
-
 minion_collision:
 	ldx MINION_IND
 	lda minion_status ,x
 	cmp #$00						; Check if the minion is already dead
 	beq minion_collision_next
-	jsr check_laser
+	
 	ldx MINION_IND
+	ldy minion_pos ,x
+	
+	lda $1e00 ,y
+	cmp #$10
+	bne minion_collision_next
+	lda MINION_IND
+	jsr kill_minion
 
 minion_collision_next:
 	inx								; Increment minion index

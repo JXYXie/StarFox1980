@@ -20,10 +20,10 @@ characters:
     hex 24 24 ff ff 7e 24 24 00     ; 11 Minion 1
     hex 24 24 7e ff 7e 3c 24 24     ; 12 Minion 2
     hex db 76 3c 7f fe 7f d9 89     ; 13 Minion 1 Death
-    hex db 76 3c 7f fe 7f d9 89     ; 14 Minion 2 Death
-    hex db 76 3c 7f fe 7f d9 89     ; 15 Player Death
-    hex db 76 3c 7f fe 7f d9 89     ; 16 Player Death 2
-    hex db 76 3c 7f fe 7f d9 89     ; 17 Boss Top 1 Death
+    hex db 71 3c 7f fe 7f d9 89     ; 14 Minion 2 Death
+    hex db 11 2d ff fe 7f d9 05     ; 15 Player Death
+    hex db 11 d2 ff fe 7f d9 05     ; 16 Player Death 2
+    hex db f2 cc ff c3 d2 d9 89     ; 17 Boss Top 1 Death
     hex db 76 3c 7f fe 7f d9 89     ; 18 Boss Top 2 Death
     hex db 76 3c 7f fe 7f d9 89     ; 19 Boss Top 3 Death
     hex db 76 3c 7f fe 7f d9 89     ; 1A Boss Top 4 Death

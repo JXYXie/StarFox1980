@@ -598,22 +598,11 @@ shiftupdesloop2:
 
 	ldx #$ea
 	jmp suldesend
-	;the branch should end here
 
 suldesnext:  ;now the x register contains how much we want to subtract EA from
 
-	;ldy #$00 
 	txa  
 	sbc #$EA
-
-	
-;sndeslooptop:
-
-	;iny
-	;dex 
-	;bne sndeslooptop ;y contains the offset of x after this, move it back to x
-
-	;TYA
 	TAX ; value now back in x
 
 suldesend:
@@ -642,9 +631,6 @@ endendenddes:
 	ldx #$00
 
 	jmp suldesend
-
-
-
 
 ;-----------player laser subroutines
 
@@ -890,8 +876,6 @@ endendend:
 	jmp sulend
 
 
-
-
 shiftupfordps:;actually decrements, but shifts stuff up the screen
 
 	;ldy #$16 ; need add 22 to shift something 1 char up
@@ -957,16 +941,21 @@ spinloop:
 
 shiftUp: ;actually decrements, but shifts stuff up the screen
 
-;    ldx #$16 ; need add 22 to shift something 1 char up
-;    TAY ; transfer a to y for decrement(moves stuff higher) 
 	sec
 	sbc #$16
+	rts
 
-;shiftuploop:
-;    dey
-;    dex
-;    bne shiftuploop
-;    TYA
+victory_screen:
+	jsr CLRSCRN					; clear screen
+
+    lda #$19					; load new background colour
+	sta SCRCOLOR				; change background and border colours
+	
+	lda #$8						; load new background colour
+	sta SCRCOLOR				; change background and border colours
+	
+	jmp victory_screen	
+
 	rts
 
 	echo "Bytes remaining in program"

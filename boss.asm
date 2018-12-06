@@ -3,7 +3,7 @@
 ;-----------------------------------------
 
 spawn_boss:
-	ldx #$05					; Initialize boss health
+	ldx #$0a					; Initialize boss health
 	stx BOSS_HEALTH
 	ldx #$1f					; Boss position
 	stx BOSS_POS				;
@@ -114,9 +114,16 @@ boss_collision_end
 	rts
 
 decr_boss_health:
+
+	ldx BOSS_POS
+	lda #$17					; Boss top left character
+	sta $1e00 ,x				; Store it at the right locatin
+	lda #$07					; Colour
+	sta $9600 ,x
+
 	ldx BOSS_HEALTH
-	dex
-	stx BOSS_HEALTH
+	dex							; Decrease health
+	stx BOSS_HEALTH				; Store it
 	cpx #$00
 	beq boss_death
 	rts
@@ -175,4 +182,4 @@ boss_death:
 	lda #$07					; Colour
 	sta $9600 ,x
 
-	jmp boss_death
+	jsr victory_screen
